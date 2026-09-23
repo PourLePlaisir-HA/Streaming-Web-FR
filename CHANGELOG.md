@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.0-beta.4
+
+Player discovery and diagnostics hotfix.
+
+- Resynchronizes Android TV destinations from the backend every time a media popup opens.
+- Adds a manual refresh button to the Lovelace card.
+- Adds optional `debug: true` card diagnostics.
+- Shows active configuration source, YAML path, detected player count/IDs and parser issues.
+- YAML parser now accepts both list syntax and ID-keyed mapping syntax for providers and players.
+- Invalid provider/player blocks are no longer silently discarded: parser issues are exposed to the card.
+- Adds runtime configuration diagnostics over the internal WebSocket API.
+- Removes the redundant Config Entry update listener from the dev branch.
+
 ## 0.1.0-beta.3
 
 YAML configuration foundation.
