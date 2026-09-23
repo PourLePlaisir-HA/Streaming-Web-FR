@@ -1,3 +1,13 @@
+## 0.6.0-beta.3
+
+- Fixed media details and playback for items loaded from deeper provider catalog pages.
+- Preserved and reused the exact provider item URL instead of rebuilding it only from the item ID.
+- Added strict same-provider URL validation before a catalog URL can be used by the backend.
+- Added canonical trailing-slash and legacy URL fallbacks for provider routing compatibility.
+- Added an explicit error when a media page enters a redirect loop.
+- Added the media provider ID and page URL to the popup when `debug: true`.
+- Kept catalog pagination, search and Android TV / VLC launch behavior unchanged.
+
 ## 0.6.0-beta.2
 
 - Added real provider-side catalog pagination with opaque continuation cursors.

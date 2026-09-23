@@ -167,11 +167,21 @@ class ProviderManager:
             search_mode="+".join(sorted(search_modes)) or ("provider" if query else "local"),
         )
 
-    async def details(self, provider_id: str, provider_item_id: str) -> MediaItem:
-        return await self.get(provider_id).details(provider_item_id)
+    async def details(
+        self,
+        provider_id: str,
+        provider_item_id: str,
+        page_url: str | None = None,
+    ) -> MediaItem:
+        return await self.get(provider_id).details(provider_item_id, page_url=page_url)
 
-    async def resolve(self, provider_id: str, provider_item_id: str) -> ResolvedStream:
-        return await self.get(provider_id).resolve(provider_item_id)
+    async def resolve(
+        self,
+        provider_id: str,
+        provider_item_id: str,
+        page_url: str | None = None,
+    ) -> ResolvedStream:
+        return await self.get(provider_id).resolve(provider_item_id, page_url=page_url)
 
     async def test_provider(self, provider_id: str) -> dict[str, Any]:
         return await self.get(provider_id).test_connection()

@@ -286,6 +286,7 @@ class StreamingWebFrCard extends HTMLElement {
               <h2>${this._esc(item.title || "")}</h2>
               ${item.year ? `<div class="modal-year">${this._esc(item.year)}</div>` : ""}
               <p>${this._esc(item.overview || "Aucun synopsis disponible.")}</p>
+              ${this._config.debug ? `<div class="modal-debug">provider_item_id: ${this._esc(item.provider_item_id || "—")}<br>page_url: ${this._esc(item.page_url || "—")}</div>` : ""}
               <div class="play-list">
                 ${players || '<div class="hint">Aucune destination Android TV configurée.</div>'}
               </div>
@@ -372,6 +373,7 @@ class StreamingWebFrCard extends HTMLElement {
         .play span{display:flex;flex-direction:column}
         .play small{color:#cfcfd5;margin-top:2px}
         .play-status,.hint{margin-top:10px;color:#bbb;font-size:12px}
+        .modal-debug{margin-top:12px;padding:8px;border:1px dashed rgba(255,255,255,.16);border-radius:8px;color:#aaa;font-size:10px;overflow-wrap:anywhere}
         .sentinel{height:1px}
         .debug{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;padding:9px 10px;border:1px dashed rgba(255,255,255,.18);border-radius:10px;font-size:11px;color:#bbb}
         .debug strong{color:#fff}
@@ -603,6 +605,7 @@ class StreamingWebFrCard extends HTMLElement {
         type: "streaming_web_fr/details",
         provider_id: item.provider_id,
         provider_item_id: String(item.provider_item_id),
+        ...(item.page_url ? { page_url: item.page_url } : {}),
       });
     } catch (err) {
       this._popup = { ...item, overview: String(err?.message || err) };
@@ -620,12 +623,14 @@ class StreamingWebFrCard extends HTMLElement {
     this._playStatus = "Résolution du flux et lancement de VLC…";
     this._render();
     try {
-      await this._hass.callWS({
+      const msg = {
         type: "streaming_web_fr/play",
         provider_id: providerId,
         provider_item_id: String(itemId),
         player_id: playerId,
-      });
+      };
+      if (this._popup?.page_url) msg.page_url = this._popup.page_url;
+      await this._hass.callWS(msg);
       this._playStatus = "Commande envoyée à VLC.";
     } catch (err) {
       this._playStatus = `Erreur : ${String(err?.message || err)}`;

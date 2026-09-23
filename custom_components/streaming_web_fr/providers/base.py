@@ -150,11 +150,19 @@ class StreamingProvider(ABC):
         return [item for item in items if query in item.title.casefold()]
 
     @abstractmethod
-    async def details(self, provider_item_id: str) -> MediaItem:
+    async def details(
+        self,
+        provider_item_id: str,
+        page_url: str | None = None,
+    ) -> MediaItem:
         raise NotImplementedError
 
     @abstractmethod
-    async def resolve(self, provider_item_id: str) -> ResolvedStream:
+    async def resolve(
+        self,
+        provider_item_id: str,
+        page_url: str | None = None,
+    ) -> ResolvedStream:
         raise NotImplementedError
 
     async def test_connection(self) -> dict[str, Any]:

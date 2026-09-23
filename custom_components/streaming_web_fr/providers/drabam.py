@@ -6,6 +6,8 @@ import re
 import unicodedata
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
+import aiohttp
+
 from ..models import CatalogPage, MediaItem, ResolvedStream
 from .base import ProviderError, StreamingProvider
 
@@ -71,11 +73,35 @@ class DrabamProvider(StreamingProvider):
             return self.base_url
         return f"{self.base_url}/home/drabam"
 
-    def _detail_url(self, provider_item_id: str) -> str:
+    def _detail_urls(
+        self,
+        provider_item_id: str,
+        page_url: str | None = None,
+    ) -> list[str]:
         base = self.base_url
         if base.endswith("/home/drabam"):
             base = base[: -len("/home/drabam")]
-        return f"{base.rstrip('/')}/b/drabam/{provider_item_id}"
+        fallback = f"{base.rstrip('/')}/b/drabam/{provider_item_id}"
+
+        candidates: list[str] = []
+        if page_url:
+            parsed = urlsplit(str(page_url))
+            base_parsed = urlsplit(base)
+            expected_path = re.compile(
+                rf"/b/drabam/{re.escape(str(provider_item_id))}/?$"
+            )
+            if (
+                parsed.scheme in {"http", "https"}
+                and parsed.scheme == base_parsed.scheme
+                and parsed.netloc == base_parsed.netloc
+                and expected_path.search(parsed.path)
+            ):
+                candidates.append(str(page_url))
+
+        # Prefer the canonical slash form while keeping the legacy URL as a
+        # final fallback for providers whose routing behaves differently.
+        candidates.extend([f"{fallback}/", fallback])
+        return list(dict.fromkeys(candidates))
 
     def _catalog_url(self, source: str, final_url: str) -> str | None:
         fallback = None
@@ -303,11 +329,30 @@ class DrabamProvider(StreamingProvider):
             search_mode="provider_scan",
         )
 
-    async def details(self, provider_item_id: str) -> MediaItem:
-        page_url = self._detail_url(provider_item_id)
-        source, final_url, status, _ = await self._get_text(page_url)
+    async def details(
+        self,
+        provider_item_id: str,
+        page_url: str | None = None,
+    ) -> MediaItem:
+        source = ""
+        final_url = ""
+        status = 0
+        redirect_error = False
+        for candidate in self._detail_urls(provider_item_id, page_url):
+            try:
+                source, final_url, status, _ = await self._get_text(candidate)
+            except aiohttp.TooManyRedirects:
+                redirect_error = True
+                continue
+            if status < 400:
+                break
+        else:
+            if redirect_error:
+                raise ProviderError(
+                    "Boucle de redirection lors de l'ouverture de la fiche média"
+                )
         if status >= 400:
-            raise ProviderError(f"Drabam fiche HTTP {status}")
+            raise ProviderError(f"Provider fiche HTTP {status}")
 
         h1 = _H1_RE.search(source)
         title = _clean(h1.group(1)) if h1 else f"Drabam {provider_item_id}"
@@ -344,8 +389,12 @@ class DrabamProvider(StreamingProvider):
             or "mpegurl" in content_type.casefold()
         )
 
-    async def resolve(self, provider_item_id: str) -> ResolvedStream:
-        item = await self.details(provider_item_id)
+    async def resolve(
+        self,
+        provider_item_id: str,
+        page_url: str | None = None,
+    ) -> ResolvedStream:
+        item = await self.details(provider_item_id, page_url=page_url)
         player_url = str(item.extra.get("player_url") or "")
         if not player_url:
             raise ProviderError("Player iframe introuvable")
