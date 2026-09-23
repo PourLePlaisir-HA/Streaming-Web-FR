@@ -45,6 +45,7 @@ class ProviderManager:
                     "type": provider.provider_type,
                     "priority": provider.priority,
                     "enabled": provider.enabled,
+                    "diagnostics": provider.diagnostics(),
                 }
             )
         return result

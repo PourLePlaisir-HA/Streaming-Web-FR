@@ -15,6 +15,12 @@ providers:
     priority: 100
     base_url: https://example.com/access-prefix
 
+    # Provider protection defaults. Keep these values conservative.
+    request_interval_seconds: 1.25
+    cache_ttl_seconds: 600
+    circuit_breaker_seconds: 900
+    search_pages_per_request: 2
+
     # Authentication modes:
     # none | basic | form_login | api_key | bearer | cookie | custom_headers
     auth:

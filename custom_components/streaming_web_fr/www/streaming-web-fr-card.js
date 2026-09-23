@@ -76,6 +76,22 @@ class StreamingWebFrCard extends HTMLElement {
       .replaceAll("'", "&#039;");
   }
 
+  _errorText(error) {
+    if (typeof error === "string") return error;
+    const message = error?.message;
+    if (typeof message === "string") return message;
+    if (message && typeof message === "object") {
+      if (typeof message.message === "string") return message.message;
+      if (typeof message.body === "string") return message.body;
+    }
+    if (typeof error?.body === "string") return error.body;
+    try {
+      const serialized = JSON.stringify(message || error);
+      if (serialized && serialized !== "{}") return serialized;
+    } catch (_) {}
+    return "Erreur inconnue";
+  }
+
   _focusSnapshot() {
     const root = this.shadowRoot;
     const input = root?.querySelector(".search");
@@ -135,7 +151,7 @@ class StreamingWebFrCard extends HTMLElement {
       }
       this._loaded = true;
     } catch (err) {
-      this._error = String(err?.message || err);
+      this._error = this._errorText(err);
     } finally {
       const focus2 = this._focusSnapshot() || focus;
       this._loading = false;
@@ -306,6 +322,10 @@ class StreamingWebFrCard extends HTMLElement {
     const hasRemoteMore = Boolean(this._data?.has_more && this._data?.next_cursor);
     const hasMore = hasLocalMore || hasRemoteMore;
     const providers = this._data?.providers || [];
+    const providerDiagnostics = providers.map((provider) => {
+      const diag = provider.diagnostics || {};
+      return `${provider.id}: ${diag.requests || 0} req / ${diag.cache_hits || 0} cache / ${diag.circuit_open_seconds || 0}s pause`;
+    }).join(" | ");
     const catalogMode = this._view === "catalog";
     const homeSections = this._sectionDefinitions().map((section) => this._homeSection(section)).join("");
 
@@ -418,6 +438,7 @@ class StreamingWebFrCard extends HTMLElement {
               <span>search: ${this._esc(this._data?.search_mode || "—")}</span>
               <span>players: ${(this._data?.players || []).length}</span>
               <span>ids: ${this._esc((this._data?.players || []).map((p) => p.id).join(", ") || "—")}</span>
+              <span>provider: ${this._esc(providerDiagnostics || "—")}</span>
               <span>config: ${this._esc(this._data?.config_path || "—")}</span>
               ${(this._data?.config_issues || []).map((issue) => `<span class="debug-issue">${this._esc(issue)}</span>`).join("")}
             </div>
@@ -443,7 +464,7 @@ class StreamingWebFrCard extends HTMLElement {
             <div class="toolbar">
               ${this._config.searchbox ? `
                 <div class="search-wrap">
-                  <input class="search" type="search" value="${this._esc(this._query)}" placeholder="Rechercher un titre…">
+                  <input class="search" type="search" value="${this._esc(this._query)}" placeholder="Rechercher (3 caractères min.)…">
                   <ha-icon class="search-icon" icon="mdi:magnify"></ha-icon>
                 </div>` : ""}
               <select class="sort" aria-label="Tri">
@@ -537,9 +558,11 @@ class StreamingWebFrCard extends HTMLElement {
         this._query = event.target.value;
         clearTimeout(this._searchTimer);
         this._searchTimer = setTimeout(() => {
+          const query = this._query.trim();
+          if (query && query.length < 3) return;
           this._visible = this._config.posters_par_lot;
           this._load();
-        }, 280);
+        }, 800);
       });
     }
 
@@ -609,7 +632,7 @@ class StreamingWebFrCard extends HTMLElement {
         ...(item.extra?.source_url ? { page_referer: item.extra.source_url } : {}),
       });
     } catch (err) {
-      this._popup = { ...item, overview: String(err?.message || err) };
+      this._popup = { ...item, overview: this._errorText(err) };
     } finally {
       this._popupLoading = false;
       this._render();
@@ -635,7 +658,7 @@ class StreamingWebFrCard extends HTMLElement {
       await this._hass.callWS(msg);
       this._playStatus = "Commande envoyée à VLC.";
     } catch (err) {
-      this._playStatus = `Erreur : ${String(err?.message || err)}`;
+      this._playStatus = `Erreur : ${this._errorText(err)}`;
     }
     this._render();
   }

@@ -72,9 +72,9 @@ scroll_infini: false
 debug: false
 ```
 
-If `debug` is omitted, it defaults to `false`. Set `debug: true` temporarily for diagnostics. The card can then expose the current view/category, item count, active configuration source, YAML path, detected Android TV destinations and parser issues.
+If `debug` is omitted, it defaults to `false`. Set `debug: true` temporarily for diagnostics. The card can then expose the current view/category, item count, active configuration source, YAML path, detected Android TV destinations, provider request/cache/circuit-breaker counters and parser issues.
 
-In the catalog view, **Voir N de plus** and optional infinite scroll reveal the local batch first, then transparently request the next page from the provider. Search follows the provider catalog beyond the initially loaded pool. With `debug: true`, the card also shows the integration version, provider page, continuation state and search mode.
+In the catalog view, **Voir N de plus** and optional infinite scroll reveal the local batch first, then transparently request the next page from the provider. Search starts at three characters and follows the provider catalog in small, rate-limited batches. Provider HTML pages are cached, and HTTP 403/429 or redirect loops open a temporary circuit breaker instead of retrying aggressively. With `debug: true`, the card also shows the integration version, provider page, continuation state and search mode.
 
 The default home view mirrors the provider's editorial structure with horizontal rails for **Derniers ajouts**, **À l'affiche**, **Animations** and **Docs & Spectacles**. **Explorer le catalogue** opens the complete catalog, while **Voir tout** opens the corresponding section.
 
@@ -100,6 +100,10 @@ providers:
     enabled: true
     priority: 100
     base_url: https://example.com/access-prefix
+    request_interval_seconds: 1.25
+    cache_ttl_seconds: 600
+    circuit_breaker_seconds: 900
+    search_pages_per_request: 2
     auth:
       mode: none
 

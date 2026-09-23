@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 import json
+import time
 from abc import ABC, abstractmethod
 from typing import Any
 from urllib.parse import urljoin, urlsplit
@@ -39,6 +41,51 @@ class StreamingProvider(ABC):
         # cookie jar. Providers still need browser-like, domain-scoped cookies
         # across catalog, details and player requests.
         self._cookie_jar = aiohttp.CookieJar(unsafe=True)
+        self._request_lock = asyncio.Lock()
+        self._last_request_at = 0.0
+        self._request_count = 0
+        self._cache_hits = 0
+        self._text_cache: dict[tuple[str, str], tuple[float, tuple[str, str, int, str]]] = {}
+        self._circuit_open_until = 0.0
+
+    def diagnostics(self) -> dict[str, Any]:
+        return {
+            "requests": self._request_count,
+            "cache_hits": self._cache_hits,
+            "circuit_open_seconds": max(
+                0, int(self._circuit_open_until - time.monotonic())
+            ),
+        }
+
+    async def _wait_for_request_slot(self) -> None:
+        cooldown = self._circuit_open_until - time.monotonic()
+        if cooldown > 0:
+            raise ProviderError(
+                f"Provider temporairement en pause ({max(1, int(cooldown))} s)"
+            )
+
+        interval = max(
+            0.5,
+            min(float(self.config.get("request_interval_seconds") or 1.25), 10.0),
+        )
+        async with self._request_lock:
+            cooldown = self._circuit_open_until - time.monotonic()
+            if cooldown > 0:
+                raise ProviderError(
+                    f"Provider temporairement en pause ({max(1, int(cooldown))} s)"
+                )
+            wait = interval - (time.monotonic() - self._last_request_at)
+            if wait > 0:
+                await asyncio.sleep(wait)
+            self._last_request_at = time.monotonic()
+            self._request_count += 1
+
+    def _open_circuit(self) -> None:
+        cooldown = max(
+            60.0,
+            min(float(self.config.get("circuit_breaker_seconds") or 900), 3600.0),
+        )
+        self._circuit_open_until = time.monotonic() + cooldown
 
     def _request_kwargs(self) -> dict[str, Any]:
         auth = self.config.get("auth") or {}
@@ -94,6 +141,7 @@ class StreamingProvider(ABC):
                 extra = {}
         if isinstance(extra, dict):
             payload.update({str(k): str(v) for k, v in extra.items()})
+        await self._wait_for_request_slot()
         async with self.session.post(
             login_url,
             data=payload,
@@ -103,6 +151,12 @@ class StreamingProvider(ABC):
             allow_redirects=True,
         ) as response:
             self._cookie_jar.update_cookies(response.cookies, response.url)
+            if response.status in {403, 429}:
+                self._open_circuit()
+                await response.read()
+                raise ProviderError(
+                    f"Provider HTTP {response.status} : accès mis en pause 15 min"
+                )
             if response.status >= 400:
                 raise ProviderError(f"Échec connexion provider HTTP {response.status}")
             await response.read()
@@ -113,7 +167,19 @@ class StreamingProvider(ABC):
         url: str,
         *,
         referer: str | None = None,
+        cache_ttl: float | None = None,
     ) -> tuple[str, str, int, str]:
+        ttl = (
+            float(self.config.get("cache_ttl_seconds") or 600)
+            if cache_ttl is None
+            else float(cache_ttl)
+        )
+        cache_key = (str(url), str(referer or ""))
+        cached = self._text_cache.get(cache_key)
+        if ttl > 0 and cached and cached[0] > time.monotonic():
+            self._cache_hits += 1
+            return cached[1]
+
         await self._ensure_form_login()
         kwargs = self._request_kwargs()
         base_headers = dict(kwargs.pop("headers", {}))
@@ -123,6 +189,7 @@ class StreamingProvider(ABC):
         redirect_trace: list[str] = []
 
         for _ in range(11):
+            await self._wait_for_request_slot()
             headers = dict(base_headers)
             if current_referer:
                 headers["Referer"] = current_referer
@@ -135,6 +202,12 @@ class StreamingProvider(ABC):
                 **kwargs,
             ) as response:
                 self._cookie_jar.update_cookies(response.cookies, response.url)
+                if response.status in {403, 429}:
+                    self._open_circuit()
+                    await response.read()
+                    raise ProviderError(
+                        f"Provider HTTP {response.status} : accès mis en pause 15 min"
+                    )
                 location = response.headers.get("Location")
                 if response.status in {301, 302, 303, 307, 308} and location:
                     next_url = urljoin(str(response.url), location)
@@ -145,6 +218,7 @@ class StreamingProvider(ABC):
                     )
                     await response.read()
                     if next_url in seen:
+                        self._open_circuit()
                         raise ProviderError(
                             "Boucle de redirection HTTP : "
                             + " | ".join(redirect_trace[-6:])
@@ -155,13 +229,17 @@ class StreamingProvider(ABC):
                     continue
 
                 body = await response.text(errors="replace")
-                return (
+                result = (
                     body,
                     str(response.url),
                     response.status,
                     response.headers.get("Content-Type", ""),
                 )
+                if ttl > 0 and response.status < 400:
+                    self._text_cache[cache_key] = (time.monotonic() + ttl, result)
+                return result
 
+        self._open_circuit()
         raise ProviderError(
             "Trop de redirections HTTP : " + " | ".join(redirect_trace[-6:])
         )

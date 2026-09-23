@@ -58,6 +58,18 @@ def _normalize_provider(raw: Any) -> tuple[dict[str, Any] | None, str | None]:
         "priority": int(raw.get("priority") or 100),
         "base_url": base_url,
         "auth": dict(auth or {}),
+        "request_interval_seconds": max(
+            0.5, min(float(raw.get("request_interval_seconds") or 1.25), 10.0)
+        ),
+        "cache_ttl_seconds": max(
+            60, min(int(raw.get("cache_ttl_seconds") or 600), 3600)
+        ),
+        "circuit_breaker_seconds": max(
+            60, min(int(raw.get("circuit_breaker_seconds") or 900), 3600)
+        ),
+        "search_pages_per_request": max(
+            1, min(int(raw.get("search_pages_per_request") or 2), 5)
+        ),
     }, None
 
 

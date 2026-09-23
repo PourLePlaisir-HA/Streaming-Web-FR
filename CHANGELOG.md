@@ -1,3 +1,15 @@
+## 0.6.0-beta.6
+
+- Added a provider-wide request limiter (1.25 seconds between requests by default).
+- Added a 10-minute HTML cache to avoid repeatedly loading home, catalog and details pages.
+- Reduced provider catalog search from 25 pages to 2 pages per user action, capped at 5.
+- Required at least 3 search characters and increased the card debounce to 800 ms.
+- Added a 15-minute circuit breaker on HTTP 403/429 and redirect loops.
+- Disabled caching for player pages and HLS manifests so playback URLs cannot become stale.
+- Added provider request, cache-hit and circuit-breaker counters to `debug: true`.
+- Fixed frontend errors rendered as `[object Object]` by extracting structured WebSocket messages.
+- This safety beta does not attempt to bypass provider protections.
+
 ## 0.6.0-beta.5
 
 - Added a provider-scoped cookie jar independent from Home Assistant's shared HTTP session.

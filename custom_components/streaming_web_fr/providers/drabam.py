@@ -288,6 +288,8 @@ class DrabamProvider(StreamingProvider):
     ) -> CatalogPage:
         wanted = str(category or "all").strip().casefold()
         needle = str(query or "").strip().casefold()
+        if needle and len(needle) < 3:
+            return CatalogPage(items=[], search_mode="minimum_3_chars")
 
         if wanted not in {"all", "catalog", "catalogue"}:
             items = await self.browse(category=wanted)
@@ -326,7 +328,7 @@ class DrabamProvider(StreamingProvider):
         has_more = True
         next_cursor: str | None = cursor
         scanned = 0
-        max_scan = max(1, min(int(self.config.get("search_pages_per_request") or 25), 100))
+        max_scan = max(1, min(int(self.config.get("search_pages_per_request") or 2), 5))
         while has_more and scanned < max_scan and len(matches) < max(1, limit):
             batch, next_cursor, has_more = await self._catalog_page(
                 catalog_url, page, previous_fingerprint
@@ -403,7 +405,9 @@ class DrabamProvider(StreamingProvider):
 
     async def _validate_manifest(self, url: str, referer: str | None) -> bool:
         try:
-            body, _, status, content_type = await self._get_text(url, referer=referer)
+            body, _, status, content_type = await self._get_text(
+                url, referer=referer, cache_ttl=0
+            )
         except Exception:
             return False
         return status < 400 and (
@@ -429,6 +433,7 @@ class DrabamProvider(StreamingProvider):
         source, final_url, status, _ = await self._get_text(
             player_url,
             referer=item.page_url,
+            cache_ttl=0,
         )
         if status >= 400:
             raise ProviderError(f"Player HTTP {status}")
