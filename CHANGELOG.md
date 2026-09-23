@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.1
+
+Stable documentation and branding release.
+
+- Keeps the validated v0.5.0 runtime and playback behavior unchanged.
+- Adds the completed public README.
+- Documents installation, Lovelace configuration, YAML configuration and Android TV / VLC playback.
+- Adds the Streaming Web FR project icon.
+- Introduces the turquoise + anthracite project identity.
+- Bumps the integration manifest and VERSION file to 0.5.1.
+
 ## 0.5.0
 
 First stable release.
