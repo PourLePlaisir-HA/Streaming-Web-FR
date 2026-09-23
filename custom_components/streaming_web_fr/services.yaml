@@ -1,0 +1,3 @@
+reload_config:
+  name: Reload configuration
+  description: Reload /config/streaming_web_fr.yaml without restarting Home Assistant.
