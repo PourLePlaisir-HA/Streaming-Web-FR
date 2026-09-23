@@ -12,6 +12,7 @@ from ..const import (
     AUTH_BEARER,
     AUTH_COOKIE,
     AUTH_CUSTOM_HEADERS,
+    AUTH_FORM_LOGIN,
 )
 from ..models import MediaItem, ResolvedStream
 
@@ -31,6 +32,7 @@ class StreamingProvider(ABC):
         self.base_url = str(config.get("base_url") or "").strip().rstrip("/")
         self.priority = int(config.get("priority") or 100)
         self.enabled = bool(config.get("enabled", True))
+        self._form_logged_in = False
 
     def _request_kwargs(self) -> dict[str, Any]:
         auth = self.config.get("auth") or {}
