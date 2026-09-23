@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Streaming Web FR</title>
+  <desc id="desc">Geometric anthracite cloud with turquoise play symbol and streaming waves.</desc>
+  <rect width="512" height="512" rx="104" fill="#f7f9fa"/>
+  <path d="M142 324h226c51 0 92-38 92-86 0-43-33-79-77-85-17-55-68-95-129-95-70 0-129 53-136 121-42 9-74 45-74 88 0 50 44 91 98 91z"
+        fill="#2f3437"/>
+  <path d="M208 170l0 132 112-66z" fill="#24c7c9"/>
+  <path d="M343 187c27 13 45 40 45 71s-18 58-45 71" fill="none" stroke="#24c7c9" stroke-width="20" stroke-linecap="round"/>
+  <path d="M379 151c40 21 67 61 67 107s-27 86-67 107" fill="none" stroke="#24c7c9" stroke-width="16" stroke-linecap="round" opacity=".9"/>
+</svg>
