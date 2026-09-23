@@ -11,7 +11,7 @@ First architecture beta:
 - unlimited configurable providers;
 - provider priority and enable/disable state;
 - pluggable provider architecture;
-- generic authentication modes: none, Basic, API key, Bearer token, cookie, custom headers;
+- generic authentication modes: none, Basic, form login, API key, Bearer token, cookie, custom headers;
 - first provider module: Drabam;
 - normalized catalog model shared by all providers;
 - provider aggregation;
