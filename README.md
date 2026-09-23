@@ -12,9 +12,11 @@
 
 > This repository is fully independent from Streaming Top FR. It shares no runtime, storage, provider or service dependency with that project.
 
-## Current stable baseline — v0.5.0
+## Current stable release — v0.5.1
 
-The v0.5.0 codebase provides:
+The v0.5.1 release keeps the validated v0.5.0 runtime unchanged and adds the completed public documentation and project identity.
+
+### Functional baseline
 
 - unlimited configurable providers;
 - provider priority and enable/disable state;
@@ -31,6 +33,14 @@ The v0.5.0 codebase provides:
 - optional infinite scroll;
 - runtime YAML reload;
 - diagnostics mode.
+
+### v0.5.1 additions
+
+- refreshed public README;
+- documented YAML, Lovelace and Android TV/VLC configuration;
+- added the Streaming Web FR project icon;
+- turquoise + anthracite visual identity;
+- no functional regression or playback-engine change.
 
 ## Installation
 
