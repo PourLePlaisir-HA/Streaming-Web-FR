@@ -1,7 +1,7 @@
 {
   "domain": "streaming_web_fr",
   "name": "Streaming Web FR",
-  "version": "0.1.0-beta.4",
+  "version": "0.5.0",
   "config_flow": true,
   "iot_class": "cloud_polling",
   "requirements": [],
