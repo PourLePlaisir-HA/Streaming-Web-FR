@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.0-beta.3
+
+YAML configuration foundation.
+
+- Adds `/config/streaming_web_fr.yaml` as the canonical configuration source when present.
+- Adds a public anonymized template: `streaming_web_fr.example.yaml`.
+- Supports unlimited providers and Android TV destinations from YAML.
+- Keeps provider authentication data in YAML, including none, Basic, form login, API key, Bearer, cookie and custom headers.
+- Adds the Home Assistant action `streaming_web_fr.reload_config` to reload YAML without restarting Home Assistant.
+- Keeps Config Entry / Options Flow as a temporary fallback when the YAML file is absent.
+- The future configuration UI will be built on top of this same configuration model.
+
 ## 0.1.0-beta.2
 
 Configuration hotfix.
