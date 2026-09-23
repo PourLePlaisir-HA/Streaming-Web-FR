@@ -4,7 +4,7 @@
 
 > This repository is fully independent from Streaming Top FR. It shares no runtime, storage, provider, or service dependency with that project.
 
-## v0.1.0-beta.3
+## v0.1.0-beta.4
 
 First architecture beta:
 
@@ -34,7 +34,10 @@ title: Streaming Web
 searchbox: true
 posters_par_lot: 8
 scroll_infini: false
+debug: false
 ```
+
+For diagnostics, temporarily set `debug: true`. The card then displays the active configuration source, YAML path, detected player count/IDs and parser issues.
 
 The card resource is registered automatically by the integration.
 
