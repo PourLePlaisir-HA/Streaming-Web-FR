@@ -1,0 +1,112 @@
+from __future__ import annotations
+
+from copy import deepcopy
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+from .const import CONF_PLAYERS, CONF_PROVIDERS
+
+CONFIG_FILENAME = "streaming_web_fr.yaml"
+
+DEFAULT_CONFIG: dict[str, Any] = {
+    "version": 1,
+    CONF_PROVIDERS: [],
+    CONF_PLAYERS: [],
+}
+
+
+def _normalize_provider(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict):
+        return None
+    provider_id = str(raw.get("id") or "").strip()
+    provider_type = str(raw.get("type") or "").strip().casefold()
+    base_url = str(raw.get("base_url") or "").strip().rstrip("/")
+    if not provider_id or not provider_type or not base_url:
+        return None
+    auth = raw.get("auth") if isinstance(raw.get("auth"), dict) else {}
+    return {
+        "id": provider_id,
+        "name": str(raw.get("name") or provider_id).strip(),
+        "type": provider_type,
+        "enabled": bool(raw.get("enabled", True)),
+        "priority": int(raw.get("priority") or 100),
+        "base_url": base_url,
+        "auth": dict(auth or {}),
+    }
+
+
+def _normalize_player(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict):
+        return None
+    player_id = str(raw.get("id") or "").strip()
+    remote = str(raw.get("remote") or "").strip()
+    adb_player = str(raw.get("adb_player") or "").strip()
+    if not player_id or not remote or not adb_player:
+        return None
+    return {
+        "id": player_id,
+        "name": str(raw.get("name") or player_id).strip(),
+        "type": str(raw.get("type") or "android_tv").strip().casefold(),
+        "media_player": str(raw.get("media_player") or "").strip(),
+        "remote": remote,
+        "adb_player": adb_player,
+    }
+
+
+def normalize_config(raw: Any) -> dict[str, Any]:
+    data = raw if isinstance(raw, dict) else {}
+    providers = []
+    for item in data.get(CONF_PROVIDERS) or []:
+        provider = _normalize_provider(item)
+        if provider:
+            providers.append(provider)
+
+    players = []
+    for item in data.get(CONF_PLAYERS) or []:
+        player = _normalize_player(item)
+        if player:
+            players.append(player)
+
+    return {
+        "version": int(data.get("version") or 1),
+        CONF_PROVIDERS: providers,
+        CONF_PLAYERS: players,
+    }
+
+
+def _load_yaml(path: str) -> dict[str, Any] | None:
+    file_path = Path(path)
+    if not file_path.exists():
+        return None
+    with file_path.open("r", encoding="utf-8") as handle:
+        raw = yaml.safe_load(handle) or {}
+    return normalize_config(raw)
+
+
+async def async_load_yaml_config(hass) -> dict[str, Any] | None:
+    path = hass.config.path(CONFIG_FILENAME)
+    return await hass.async_add_executor_job(_load_yaml, path)
+
+
+def config_path(hass) -> str:
+    return hass.config.path(CONFIG_FILENAME)
+
+
+def fallback_from_entry(entry) -> dict[str, Any]:
+    providers = entry.options.get(
+        CONF_PROVIDERS,
+        entry.data.get(CONF_PROVIDERS, []),
+    )
+    players = entry.options.get(
+        CONF_PLAYERS,
+        entry.data.get(CONF_PLAYERS, []),
+    )
+    return normalize_config(
+        {
+            "version": 1,
+            CONF_PROVIDERS: deepcopy(list(providers or [])),
+            CONF_PLAYERS: deepcopy(list(players or [])),
+        }
+    )
