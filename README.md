@@ -4,7 +4,7 @@
 
 > This repository is fully independent from Streaming Top FR. It shares no runtime, storage, provider, or service dependency with that project.
 
-## v0.1.0-beta.1
+## v0.1.0-beta.3
 
 First architecture beta:
 
@@ -38,15 +38,51 @@ scroll_infini: false
 
 The card resource is registered automatically by the integration.
 
-## Providers
+## Configuration
 
-Providers are configured from:
+When present, **`/config/streaming_web_fr.yaml` is the canonical configuration source**.
 
-**Settings → Devices & Services → Streaming Web FR → Configure**
+A complete public template is provided in the repository as:
 
-The architecture does not impose a fixed number of providers. Each provider has its own ID, display name, base URL, authentication data and priority.
+`streaming_web_fr.example.yaml`
 
-The initial provider type is `drabam`. Additional provider modules can be added without changing the Lovelace card or playback engine.
+Typical structure:
+
+```yaml
+version: 1
+
+providers:
+  - id: provider_main
+    name: Provider principal
+    type: drabam
+    enabled: true
+    priority: 100
+    base_url: https://example.com/access-prefix
+    auth:
+      mode: none
+
+players:
+  - id: androidtv1
+    name: AndroidTV1
+    type: android_tv
+    media_player: media_player.androidtv1
+    remote: remote.androidtv1
+    adb_player: media_player.androidtv1_adb
+```
+
+The number of providers and Android TV destinations is not limited.
+
+After editing the YAML file, reload it from **Developer Tools → Actions** with:
+
+```text
+streaming_web_fr.reload_config
+```
+
+A full Home Assistant restart is not required.
+
+If the YAML file does not exist, the integration temporarily falls back to the Config Entry / Options Flow configuration for backward compatibility.
+
+The first implemented provider type is `drabam`. Additional provider modules can be added without changing the Lovelace card or playback engine.
 
 ## Android TV / VLC
 
