@@ -202,9 +202,9 @@ class StreamingWebFrOptionsFlow(OptionsFlowWithReload):
     async def async_step_init(self, user_input=None):
         menu = ["add_provider", "add_player"]
         if self._providers():
-            menu.append("remove_provider")
+            menu.extend(["edit_provider", "remove_provider"])
         if self._players():
-            menu.append("remove_player")
+            menu.extend(["edit_player", "remove_player"])
         return self.async_show_menu(step_id="init", menu_options=menu)
 
     async def async_step_add_provider(self, user_input=None):
@@ -214,6 +214,49 @@ class StreamingWebFrOptionsFlow(OptionsFlowWithReload):
             providers.append(_provider_from_input(user_input, ids))
             return self._save(providers=providers)
         return self.async_show_form(step_id="add_provider", data_schema=_provider_schema())
+
+    async def async_step_edit_provider(self, user_input=None):
+        providers = self._providers()
+        choices = {
+            str(item.get("id")): str(item.get("name") or item.get("id"))
+            for item in providers
+            if item.get("id")
+        }
+        if user_input is not None:
+            self._selected_provider = str(user_input["provider_id"])
+            return await self.async_step_edit_provider_form()
+        return self.async_show_form(
+            step_id="edit_provider",
+            data_schema=vol.Schema({vol.Required("provider_id"): vol.In(choices)}),
+        )
+
+    async def async_step_edit_provider_form(self, user_input=None):
+        providers = self._providers()
+        current = next(
+            (item for item in providers if str(item.get("id")) == str(self._selected_provider)),
+            None,
+        )
+        if current is None:
+            return await self.async_step_init()
+
+        if user_input is not None:
+            other_ids = {
+                str(item.get("id") or "")
+                for item in providers
+                if str(item.get("id")) != str(self._selected_provider)
+            }
+            replacement = _provider_from_input(user_input, other_ids)
+            updated = [
+                replacement if str(item.get("id")) == str(self._selected_provider) else item
+                for item in providers
+            ]
+            self._selected_provider = None
+            return self._save(providers=updated)
+
+        return self.async_show_form(
+            step_id="edit_provider_form",
+            data_schema=_provider_schema(current),
+        )
 
     async def async_step_remove_provider(self, user_input=None):
         providers = self._providers()
@@ -254,6 +297,77 @@ class StreamingWebFrOptionsFlow(OptionsFlowWithReload):
             )
             return self._save(players=players)
         return self.async_show_form(step_id="add_player", data_schema=_player_schema())
+
+    async def async_step_edit_player(self, user_input=None):
+        players = self._players()
+        choices = {
+            str(item.get("id")): str(item.get("name") or item.get("id"))
+            for item in players
+            if item.get("id")
+        }
+        if user_input is not None:
+            self._selected_player = str(user_input["player_id"])
+            return await self.async_step_edit_player_form()
+        return self.async_show_form(
+            step_id="edit_player",
+            data_schema=vol.Schema({vol.Required("player_id"): vol.In(choices)}),
+        )
+
+    async def async_step_edit_player_form(self, user_input=None):
+        players = self._players()
+        current = next(
+            (item for item in players if str(item.get("id")) == str(self._selected_player)),
+            None,
+        )
+        if current is None:
+            return await self.async_step_init()
+
+        if user_input is not None:
+            other_ids = {
+                str(item.get("id") or "")
+                for item in players
+                if str(item.get("id")) != str(self._selected_player)
+            }
+            player_id = _slug(
+                user_input.get("player_id")
+                or user_input.get("player_name")
+                or self._selected_player
+            )
+            base = player_id
+            idx = 2
+            while player_id in other_ids:
+                player_id = f"{base}_{idx}"
+                idx += 1
+            replacement = {
+                "id": player_id,
+                "name": str(user_input.get("player_name") or player_id),
+                "type": "android_tv",
+                "media_player": str(user_input.get("media_player") or ""),
+                "remote": str(user_input.get("remote") or ""),
+                "adb_player": str(user_input.get("adb_player") or ""),
+            }
+            updated = [
+                replacement if str(item.get("id")) == str(self._selected_player) else item
+                for item in players
+            ]
+            self._selected_player = None
+            return self._save(players=updated)
+
+        schema = vol.Schema(
+            {
+                vol.Required("player_name", default=current.get("name", "AndroidTV")):
+                    selector.TextSelector(),
+                vol.Optional("player_id", default=current.get("id", "")):
+                    selector.TextSelector(),
+                vol.Optional("media_player", default=current.get("media_player", "")):
+                    selector.EntitySelector(selector.EntitySelectorConfig(domain="media_player")),
+                vol.Required("remote", default=current.get("remote", "")):
+                    selector.EntitySelector(selector.EntitySelectorConfig(domain="remote")),
+                vol.Required("adb_player", default=current.get("adb_player", "")):
+                    selector.EntitySelector(selector.EntitySelectorConfig(domain="media_player")),
+            }
+        )
+        return self.async_show_form(step_id="edit_player_form", data_schema=schema)
 
     async def async_step_remove_player(self, user_input=None):
         players = self._players()
