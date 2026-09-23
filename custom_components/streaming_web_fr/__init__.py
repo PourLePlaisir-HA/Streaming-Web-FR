@@ -180,6 +180,7 @@ def _register_ws(hass):
             vol.Optional("entry_id"): str,
             vol.Optional("provider_id"): str,
             vol.Optional("query"): str,
+            vol.Optional("category"): str,
         }
     )
     @websocket_api.async_response
@@ -192,6 +193,7 @@ def _register_ws(hass):
             items = await data["manager"].catalog(
                 provider_id=msg.get("provider_id") or None,
                 query=msg.get("query") or None,
+                category=msg.get("category") or None,
             )
             connection.send_result(
                 msg["id"],
