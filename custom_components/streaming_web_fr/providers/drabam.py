@@ -29,7 +29,7 @@ _META_DESC_RE = re.compile(
 )
 _H1_RE = re.compile(r"<h1[^>]*>(.*?)</h1>", re.IGNORECASE | re.DOTALL)
 _HEADING_RE = re.compile(r"<h[1-6][^>]*>(.*?)</h[1-6]>", re.IGNORECASE | re.DOTALL)
-_ANCHOR_RE = re.compile(r'<a[^>]+href=["\\'](?P<href>[^"\\']+)["\\'][^>]*>(?P<body>.*?)</a>', re.IGNORECASE | re.DOTALL)
+_ANCHOR_RE = re.compile(r"<a[^>]+href=['\"](?P<href>[^'\"]+)['\"][^>]*>(?P<body>.*?)</a>", re.IGNORECASE | re.DOTALL)
 _OG_IMAGE_RE = re.compile(
     r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
     re.IGNORECASE,
