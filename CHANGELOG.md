@@ -1,3 +1,14 @@
+## 0.6.0-beta.1
+
+- Added a Drabam-style Lovelace home view with **Derniers ajouts**, **À l'affiche**, **Animations** and **Docs & Spectacles** rails.
+- Added **Voir tout** navigation for each home section.
+- Added **Explorer le catalogue** and a dedicated catalog view with section filters, search, sorting, provider filter, pagination and optional infinite scroll.
+- Extended the Drabam parser to detect home sections and follow the provider's **Tout** catalog link.
+- Kept Android TV / VLC playback and the existing details popup unchanged.
+- Kept user-state features out of this project: no **Ma liste**, **Vu** or **Pas encore vu** UI.
+- Added `home_section_count` (default: `10`) for the number of posters displayed per home rail.
+- Confirmed Lovelace `debug` defaults to `false` when omitted; `debug: true` exposes technical view/category, item count, config source, players and parser/config issues.
+
 # Changelog
 
 ## 0.5.1
