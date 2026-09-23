@@ -64,12 +64,46 @@ class StreamingProvider(ABC):
 
         return kwargs
 
+    async def _ensure_form_login(self) -> None:
+        auth = self.config.get("auth") or {}
+        if str(auth.get("mode") or "none") != AUTH_FORM_LOGIN or self._form_logged_in:
+            return
+        login_url = str(auth.get("login_url") or "").strip()
+        if not login_url:
+            raise ProviderError("URL de connexion manquante")
+        username_field = str(auth.get("username_field") or "username")
+        password_field = str(auth.get("password_field") or "password")
+        payload = {
+            username_field: str(auth.get("username") or ""),
+            password_field: str(auth.get("password") or ""),
+        }
+        extra = auth.get("login_extra_fields")
+        if isinstance(extra, str) and extra.strip():
+            try:
+                extra = json.loads(extra)
+            except Exception:
+                extra = {}
+        if isinstance(extra, dict):
+            payload.update({str(k): str(v) for k, v in extra.items()})
+        async with self.session.post(
+            login_url,
+            data=payload,
+            headers={"User-Agent": "Mozilla/5.0 (Home Assistant; Streaming Web FR)"},
+            timeout=aiohttp.ClientTimeout(total=20),
+            allow_redirects=True,
+        ) as response:
+            if response.status >= 400:
+                raise ProviderError(f"Échec connexion provider HTTP {response.status}")
+            await response.read()
+        self._form_logged_in = True
+
     async def _get_text(
         self,
         url: str,
         *,
         referer: str | None = None,
     ) -> tuple[str, str, int, str]:
+        await self._ensure_form_login()
         kwargs = self._request_kwargs()
         headers = dict(kwargs.pop("headers", {}))
         if referer:
