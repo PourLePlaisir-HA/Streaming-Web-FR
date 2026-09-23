@@ -58,13 +58,18 @@ class ProviderManager:
         *,
         provider_id: str | None = None,
         query: str | None = None,
+        category: str | None = None,
     ) -> list[MediaItem]:
         providers = [self.get(provider_id)] if provider_id else list(self._providers.values())
         providers.sort(key=lambda p: (p.priority, p.name.casefold()))
 
         async def load(provider: StreamingProvider) -> list[MediaItem]:
             try:
-                return await (provider.search(query) if query else provider.browse())
+                items = await provider.browse(category=category)
+                if query:
+                    needle = str(query).strip().casefold()
+                    items = [item for item in items if needle in item.title.casefold()]
+                return items
             except Exception:
                 return []
 
