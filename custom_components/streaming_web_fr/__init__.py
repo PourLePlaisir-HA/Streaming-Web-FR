@@ -37,6 +37,15 @@ async def _async_apply_runtime_config(hass, runtime):
     runtime["players"] = list(config.get(CONF_PLAYERS) or [])
     runtime["config_source"] = source
     runtime["config_path"] = config_path(hass)
+    runtime["config_issues"] = list(config.get("_issues") or [])
+    _LOGGER.info(
+        "Streaming Web FR config: source=%s providers=%s players=%s ids=%s issues=%s",
+        source,
+        len(config.get(CONF_PROVIDERS) or []),
+        len(config.get(CONF_PLAYERS) or []),
+        [str(player.get("id")) for player in (config.get(CONF_PLAYERS) or [])],
+        runtime["config_issues"],
+    )
     return source
 
 
@@ -48,6 +57,7 @@ async def async_setup_entry(hass, entry):
         "entry": entry,
         "config_source": None,
         "config_path": config_path(hass),
+        "config_issues": [],
     }
     hass.data[DOMAIN][entry.entry_id] = runtime
     await _async_apply_runtime_config(hass, runtime)
@@ -143,6 +153,29 @@ def _register_ws(hass):
 
     @websocket_api.websocket_command(
         {
+            vol.Required("type"): f"{DOMAIN}/runtime",
+            vol.Optional("entry_id"): str,
+        }
+    )
+    @websocket_api.async_response
+    async def runtime_info(hass, connection, msg):
+        data = _entry_data(hass, msg.get("entry_id"))
+        if not data:
+            connection.send_error(msg["id"], "not_loaded", "Streaming Web FR not loaded")
+            return
+        connection.send_result(
+            msg["id"],
+            {
+                "providers": data["manager"].public_providers(),
+                "players": _public_players(data["players"]),
+                "config_source": data.get("config_source"),
+                "config_path": data.get("config_path"),
+                "config_issues": list(data.get("config_issues") or []),
+            },
+        )
+
+    @websocket_api.websocket_command(
+        {
             vol.Required("type"): f"{DOMAIN}/catalog",
             vol.Optional("entry_id"): str,
             vol.Optional("provider_id"): str,
@@ -167,6 +200,8 @@ def _register_ws(hass):
                     "players": _public_players(data["players"]),
                     "items": [item.as_dict() for item in items],
                     "config_source": data.get("config_source"),
+                    "config_path": data.get("config_path"),
+                    "config_issues": list(data.get("config_issues") or []),
                 },
             )
         except Exception as err:
@@ -248,6 +283,7 @@ def _register_ws(hass):
         except Exception as err:
             connection.send_error(msg["id"], "resolve_error", str(err))
 
+    websocket_api.async_register_command(hass, runtime_info)
     websocket_api.async_register_command(hass, catalog)
     websocket_api.async_register_command(hass, details)
     websocket_api.async_register_command(hass, play)
