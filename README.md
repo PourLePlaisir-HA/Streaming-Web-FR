@@ -20,6 +20,12 @@ First architecture beta:
 - VLC launch through Home Assistant Android Debug Bridge;
 - Lovelace card with provider filter, search, sorting, responsive posters, details popup, **Voir plus**, configurable batch size and optional infinite scroll.
 
+## Installation
+
+Add this repository to HACS as a custom **Integration** repository, install **Streaming Web FR**, restart Home Assistant, then add the integration from **Settings → Devices & Services**.
+
+For the first Drabam provider, the configurable base URL is the provider entry point (for example the current access prefix, not a hard-coded value in the integration).
+
 ## Lovelace
 
 ```yaml
