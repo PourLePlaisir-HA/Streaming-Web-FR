@@ -1,3 +1,12 @@
+## 0.6.0-beta.4
+
+- Preserved the source catalog URL for every parsed media item.
+- Sent the validated catalog URL as the HTTP referer when opening media details.
+- Forwarded the same provider context through details and stream resolution.
+- Added a browser-compatible French `Accept-Language` request header.
+- Added the source referer to popup diagnostics when `debug: true`.
+- Kept the URL validation and redirect-loop safeguards introduced in beta.3.
+
 ## 0.6.0-beta.3
 
 - Fixed media details and playback for items loaded from deeper provider catalog pages.

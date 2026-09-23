@@ -172,16 +172,26 @@ class ProviderManager:
         provider_id: str,
         provider_item_id: str,
         page_url: str | None = None,
+        page_referer: str | None = None,
     ) -> MediaItem:
-        return await self.get(provider_id).details(provider_item_id, page_url=page_url)
+        return await self.get(provider_id).details(
+            provider_item_id,
+            page_url=page_url,
+            page_referer=page_referer,
+        )
 
     async def resolve(
         self,
         provider_id: str,
         provider_item_id: str,
         page_url: str | None = None,
+        page_referer: str | None = None,
     ) -> ResolvedStream:
-        return await self.get(provider_id).resolve(provider_item_id, page_url=page_url)
+        return await self.get(provider_id).resolve(
+            provider_item_id,
+            page_url=page_url,
+            page_referer=page_referer,
+        )
 
     async def test_provider(self, provider_id: str) -> dict[str, Any]:
         return await self.get(provider_id).test_connection()

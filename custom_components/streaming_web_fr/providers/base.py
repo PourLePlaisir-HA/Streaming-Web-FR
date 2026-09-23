@@ -40,6 +40,7 @@ class StreamingProvider(ABC):
         headers = {
             "User-Agent": "Mozilla/5.0 (Home Assistant; Streaming Web FR)",
             "Accept": "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
+            "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.7",
         }
         kwargs: dict[str, Any] = {"headers": headers}
 
@@ -154,6 +155,7 @@ class StreamingProvider(ABC):
         self,
         provider_item_id: str,
         page_url: str | None = None,
+        page_referer: str | None = None,
     ) -> MediaItem:
         raise NotImplementedError
 
@@ -162,6 +164,7 @@ class StreamingProvider(ABC):
         self,
         provider_item_id: str,
         page_url: str | None = None,
+        page_referer: str | None = None,
     ) -> ResolvedStream:
         raise NotImplementedError
 

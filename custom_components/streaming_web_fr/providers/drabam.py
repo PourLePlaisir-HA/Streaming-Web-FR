@@ -103,6 +103,22 @@ class DrabamProvider(StreamingProvider):
         candidates.extend([f"{fallback}/", fallback])
         return list(dict.fromkeys(candidates))
 
+    def _detail_referer(self, page_referer: str | None) -> str:
+        if page_referer:
+            parsed = urlsplit(str(page_referer))
+            base_parsed = urlsplit(self.base_url)
+            if (
+                parsed.scheme in {"http", "https"}
+                and parsed.scheme == base_parsed.scheme
+                and parsed.netloc == base_parsed.netloc
+                and (
+                    "/home/drabam" in parsed.path
+                    or "/c/drabam/" in parsed.path
+                )
+            ):
+                return str(page_referer)
+        return self._home_url()
+
     def _catalog_url(self, source: str, final_url: str) -> str | None:
         fallback = None
         for match in _ANCHOR_RE.finditer(source):
@@ -215,15 +231,15 @@ class DrabamProvider(StreamingProvider):
                 section_key = key
                 section_label = label
 
-            extra = {}
+            extra = {"source_url": final_url}
             if section_key:
                 rank = section_ranks.get(section_key, 0)
                 section_ranks[section_key] = rank + 1
-                extra = {
+                extra.update({
                     "home_section": section_key,
                     "home_section_label": section_label,
                     "home_rank": rank,
-                }
+                })
 
             out.append(
                 MediaItem(
@@ -333,14 +349,19 @@ class DrabamProvider(StreamingProvider):
         self,
         provider_item_id: str,
         page_url: str | None = None,
+        page_referer: str | None = None,
     ) -> MediaItem:
         source = ""
         final_url = ""
         status = 0
         redirect_error = False
+        referer = self._detail_referer(page_referer)
         for candidate in self._detail_urls(provider_item_id, page_url):
             try:
-                source, final_url, status, _ = await self._get_text(candidate)
+                source, final_url, status, _ = await self._get_text(
+                    candidate,
+                    referer=referer,
+                )
             except aiohttp.TooManyRedirects:
                 redirect_error = True
                 continue
@@ -376,6 +397,7 @@ class DrabamProvider(StreamingProvider):
             page_url=final_url,
             extra={
                 "player_url": urljoin(final_url, iframe.group(1)) if iframe else None,
+                "source_url": referer,
             },
         )
 
@@ -393,8 +415,13 @@ class DrabamProvider(StreamingProvider):
         self,
         provider_item_id: str,
         page_url: str | None = None,
+        page_referer: str | None = None,
     ) -> ResolvedStream:
-        item = await self.details(provider_item_id, page_url=page_url)
+        item = await self.details(
+            provider_item_id,
+            page_url=page_url,
+            page_referer=page_referer,
+        )
         player_url = str(item.extra.get("player_url") or "")
         if not player_url:
             raise ProviderError("Player iframe introuvable")

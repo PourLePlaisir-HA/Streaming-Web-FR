@@ -286,7 +286,7 @@ class StreamingWebFrCard extends HTMLElement {
               <h2>${this._esc(item.title || "")}</h2>
               ${item.year ? `<div class="modal-year">${this._esc(item.year)}</div>` : ""}
               <p>${this._esc(item.overview || "Aucun synopsis disponible.")}</p>
-              ${this._config.debug ? `<div class="modal-debug">provider_item_id: ${this._esc(item.provider_item_id || "—")}<br>page_url: ${this._esc(item.page_url || "—")}</div>` : ""}
+              ${this._config.debug ? `<div class="modal-debug">provider_item_id: ${this._esc(item.provider_item_id || "—")}<br>page_url: ${this._esc(item.page_url || "—")}<br>page_referer: ${this._esc(item.extra?.source_url || "—")}</div>` : ""}
               <div class="play-list">
                 ${players || '<div class="hint">Aucune destination Android TV configurée.</div>'}
               </div>
@@ -606,6 +606,7 @@ class StreamingWebFrCard extends HTMLElement {
         provider_id: item.provider_id,
         provider_item_id: String(item.provider_item_id),
         ...(item.page_url ? { page_url: item.page_url } : {}),
+        ...(item.extra?.source_url ? { page_referer: item.extra.source_url } : {}),
       });
     } catch (err) {
       this._popup = { ...item, overview: String(err?.message || err) };
@@ -630,6 +631,7 @@ class StreamingWebFrCard extends HTMLElement {
         player_id: playerId,
       };
       if (this._popup?.page_url) msg.page_url = this._popup.page_url;
+      if (this._popup?.extra?.source_url) msg.page_referer = this._popup.extra.source_url;
       await this._hass.callWS(msg);
       this._playStatus = "Commande envoyée à VLC.";
     } catch (err) {

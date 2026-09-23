@@ -233,6 +233,7 @@ def _register_ws(hass):
             vol.Required("provider_id"): str,
             vol.Required("provider_item_id"): str,
             vol.Optional("page_url"): str,
+            vol.Optional("page_referer"): str,
         }
     )
     @websocket_api.async_response
@@ -246,6 +247,7 @@ def _register_ws(hass):
                 msg["provider_id"],
                 msg["provider_item_id"],
                 page_url=msg.get("page_url") or None,
+                page_referer=msg.get("page_referer") or None,
             )
             connection.send_result(msg["id"], item.as_dict())
         except Exception as err:
@@ -259,6 +261,7 @@ def _register_ws(hass):
             vol.Required("provider_item_id"): str,
             vol.Required("player_id"): str,
             vol.Optional("page_url"): str,
+            vol.Optional("page_referer"): str,
         }
     )
     @websocket_api.async_response
@@ -272,6 +275,7 @@ def _register_ws(hass):
                 msg["provider_id"],
                 msg["provider_item_id"],
                 page_url=msg.get("page_url") or None,
+                page_referer=msg.get("page_referer") or None,
             )
             player = _player(data["players"], msg["player_id"])
             await async_launch_vlc(hass, player, stream.url)
@@ -290,6 +294,7 @@ def _register_ws(hass):
             vol.Required("provider_id"): str,
             vol.Required("provider_item_id"): str,
             vol.Optional("page_url"): str,
+            vol.Optional("page_referer"): str,
         }
     )
     @websocket_api.async_response
@@ -303,6 +308,7 @@ def _register_ws(hass):
                 msg["provider_id"],
                 msg["provider_item_id"],
                 page_url=msg.get("page_url") or None,
+                page_referer=msg.get("page_referer") or None,
             )
             connection.send_result(msg["id"], stream.as_dict())
         except Exception as err:
