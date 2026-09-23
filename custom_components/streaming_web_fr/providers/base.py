@@ -14,7 +14,7 @@ from ..const import (
     AUTH_CUSTOM_HEADERS,
     AUTH_FORM_LOGIN,
 )
-from ..models import MediaItem, ResolvedStream
+from ..models import CatalogPage, MediaItem, ResolvedStream
 
 
 class ProviderError(RuntimeError):
@@ -123,6 +123,24 @@ class StreamingProvider(ABC):
     @abstractmethod
     async def browse(self, *, category: str | None = None) -> list[MediaItem]:
         raise NotImplementedError
+
+    async def browse_page(
+        self,
+        *,
+        category: str | None = None,
+        cursor: str | None = None,
+        query: str | None = None,
+        limit: int = 24,
+    ) -> CatalogPage:
+        """Return one provider page.
+
+        Providers without remote pagination keep the legacy browse contract.
+        """
+        items = await self.browse(category=category)
+        needle = str(query or "").strip().casefold()
+        if needle:
+            items = [item for item in items if needle in item.title.casefold()]
+        return CatalogPage(items=items, search_mode="local")
 
     async def search(self, query: str) -> list[MediaItem]:
         query = str(query or "").strip().casefold()

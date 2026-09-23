@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import html as html_lib
+import hashlib
 import re
 import unicodedata
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
-from ..models import MediaItem, ResolvedStream
+from ..models import CatalogPage, MediaItem, ResolvedStream
 from .base import ProviderError, StreamingProvider
 
 
@@ -34,6 +35,7 @@ _OG_IMAGE_RE = re.compile(
     r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
     re.IGNORECASE,
 )
+_CURSOR_RE = re.compile(r"^(?P<page>\d+)(?::(?P<fingerprint>[0-9a-f]{12}))?$")
 
 
 def _clean(value: str | None) -> str:
@@ -87,6 +89,68 @@ class DrabamProvider(StreamingProvider):
                 return url
             fallback = fallback or url
         return fallback
+
+    @staticmethod
+    def _page_url(catalog_url: str, page: int) -> str:
+        parts = urlsplit(catalog_url)
+        path = parts.path.rstrip("/")
+        if re.search(r"/\d+$", path):
+            path = re.sub(r"/\d+$", f"/{page}", path)
+        elif page:
+            path = f"{path}/{page}"
+        return urlunsplit((parts.scheme, parts.netloc, path, parts.query, parts.fragment))
+
+    @staticmethod
+    def _fingerprint(items: list[MediaItem]) -> str:
+        raw = "|".join(item.provider_item_id for item in items).encode()
+        return hashlib.sha1(raw).hexdigest()[:12]
+
+    @staticmethod
+    def _next_catalog_index(source: str, catalog_url: str, current: int) -> int:
+        """Read an embedded next offset/page, with sequential fallback."""
+        path = urlsplit(catalog_url).path.rstrip("/")
+        prefix = re.sub(r"/\d+$", "", path)
+        pattern = re.compile(rf"{re.escape(prefix)}/(?P<index>\d+)")
+        candidates = {
+            int(match.group("index"))
+            for match in pattern.finditer(html_lib.unescape(source).replace("\\/", "/"))
+            if int(match.group("index")) > current
+        }
+        return min(candidates) if candidates else current + 1
+
+    @staticmethod
+    def _decode_cursor(cursor: str | None) -> tuple[int, str | None]:
+        if not cursor:
+            return 0, None
+        match = _CURSOR_RE.fullmatch(str(cursor))
+        if not match:
+            raise ProviderError("Curseur catalogue invalide")
+        return int(match.group("page")), match.group("fingerprint")
+
+    async def _catalog_page(
+        self,
+        catalog_url: str,
+        page: int,
+        previous_fingerprint: str | None,
+    ) -> tuple[list[MediaItem], str | None, bool]:
+        page_url = self._page_url(catalog_url, page)
+        source, final_url, status, _ = await self._get_text(page_url)
+        if status >= 400:
+            if page > 0 and status in {404, 410}:
+                return [], None, False
+            raise ProviderError(f"Provider catalogue HTTP {status}")
+
+        items = self._extract_items(source, final_url)
+        if not items:
+            return [], None, False
+
+        fingerprint = self._fingerprint(items)
+        # Some providers redirect an unknown page to page zero. Comparing the
+        # payload fingerprint prevents an endless sequence of duplicate pages.
+        if previous_fingerprint and fingerprint == previous_fingerprint:
+            return [], None, False
+        next_page = self._next_catalog_index(source, catalog_url, page)
+        return items, f"{next_page}:{fingerprint}", True
 
     def _extract_items(self, source: str, final_url: str) -> list[MediaItem]:
         headings: list[tuple[int, str, str]] = []
@@ -171,6 +235,73 @@ class DrabamProvider(StreamingProvider):
                     return self._extract_items(catalog_source, catalog_final_url)
 
         return home_items
+
+    async def browse_page(
+        self,
+        *,
+        category: str | None = None,
+        cursor: str | None = None,
+        query: str | None = None,
+        limit: int = 24,
+    ) -> CatalogPage:
+        wanted = str(category or "all").strip().casefold()
+        needle = str(query or "").strip().casefold()
+
+        if wanted not in {"all", "catalog", "catalogue"}:
+            items = await self.browse(category=wanted)
+            if needle:
+                items = [item for item in items if needle in item.title.casefold()]
+            return CatalogPage(items=items, search_mode="section")
+
+        home_source, home_final_url, status, _ = await self._get_text(self._home_url())
+        if status >= 400:
+            raise ProviderError(f"Provider HTTP {status}")
+        catalog_url = self._catalog_url(home_source, home_final_url)
+        if not catalog_url:
+            items = self._extract_items(home_source, home_final_url)
+            if needle:
+                items = [item for item in items if needle in item.title.casefold()]
+            return CatalogPage(items=items, search_mode="local")
+
+        page, previous_fingerprint = self._decode_cursor(cursor)
+        if not needle:
+            items, next_cursor, has_more = await self._catalog_page(
+                catalog_url, page, previous_fingerprint
+            )
+            return CatalogPage(
+                items=items,
+                next_cursor=next_cursor,
+                has_more=has_more,
+                page=page,
+                search_mode="catalog",
+            )
+
+        # No stable public search endpoint is assumed. Search walks the remote
+        # catalog in bounded chunks and returns a continuation cursor when more
+        # pages remain. Already fetched provider pages are therefore searchable,
+        # while the card can keep requesting the rest until the search is global.
+        matches: list[MediaItem] = []
+        has_more = True
+        next_cursor: str | None = cursor
+        scanned = 0
+        max_scan = max(1, min(int(self.config.get("search_pages_per_request") or 25), 100))
+        while has_more and scanned < max_scan and len(matches) < max(1, limit):
+            batch, next_cursor, has_more = await self._catalog_page(
+                catalog_url, page, previous_fingerprint
+            )
+            matches.extend(item for item in batch if needle in item.title.casefold())
+            scanned += 1
+            if not has_more or not next_cursor:
+                break
+            page, previous_fingerprint = self._decode_cursor(next_cursor)
+
+        return CatalogPage(
+            items=matches,
+            next_cursor=next_cursor if has_more else None,
+            has_more=has_more,
+            page=page,
+            search_mode="provider_scan",
+        )
 
     async def details(self, provider_item_id: str) -> MediaItem:
         page_url = self._detail_url(provider_item_id)

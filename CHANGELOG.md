@@ -1,3 +1,15 @@
+## 0.6.0-beta.2
+
+- Added real provider-side catalog pagination with opaque continuation cursors.
+- **Voir N de plus** now fetches the next provider page after the local pool is exhausted.
+- Infinite scroll now extends the remote catalog instead of stopping at the initial fetch.
+- Added bounded global catalog search with continuation when no native provider search is available.
+- Added duplicate-page and empty-page guards to stop pagination safely.
+- Added multi-provider cursor support without exposing provider pagination details to Lovelace.
+- Added integration version, provider page, `has_more`, cursor and search mode to `debug: true`.
+- Kept `debug: false` as the implicit default.
+- Kept the home rails, media popup and Android TV / VLC playback unchanged.
+
 ## 0.6.0-beta.1
 
 - Added a Drabam-style Lovelace home view with **Derniers ajouts**, **À l'affiche**, **Animations** and **Docs & Spectacles** rails.

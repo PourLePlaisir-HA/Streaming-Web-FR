@@ -28,6 +28,7 @@ class StreamingWebFrCard extends HTMLElement {
     this._popupLoading = false;
     this._playStatus = "";
     this._observer = null;
+    this._remoteLoading = false;
   }
 
   setConfig(config) {
@@ -97,7 +98,7 @@ class StreamingWebFrCard extends HTMLElement {
     });
   }
 
-  async _load() {
+  async _load({ append = false, cursor = null } = {}) {
     if (!this._hass || this._loading) return;
     const focus = this._focusSnapshot();
     this._loading = true;
@@ -107,9 +108,31 @@ class StreamingWebFrCard extends HTMLElement {
     try {
       const msg = { type: "streaming_web_fr/catalog" };
       if (this._provider) msg.provider_id = this._provider;
-      if (this._view === "catalog") msg.category = this._catalogCategory || "all";
+      if (this._view === "catalog") {
+        msg.category = this._catalogCategory || "all";
+        msg.limit = Math.max(8, this._config.posters_par_lot);
+      }
       if (this._view === "catalog" && this._query.trim()) msg.query = this._query.trim();
-      this._data = await this._hass.callWS(msg);
+      if (append && cursor) msg.cursor = cursor;
+      const response = await this._hass.callWS(msg);
+      if (append) {
+        const existing = this._data?.items || [];
+        const seen = new Set(existing.map((item) => item.uid));
+        const added = (response.items || []).filter((item) => {
+          if (seen.has(item.uid)) return false;
+          seen.add(item.uid);
+          return true;
+        });
+        this._data = {
+          ...this._data,
+          ...response,
+          items: [...existing, ...added],
+          has_more: Boolean(response.has_more && response.next_cursor),
+          next_cursor: response.has_more ? response.next_cursor : null,
+        };
+      } else {
+        this._data = response;
+      }
       this._loaded = true;
     } catch (err) {
       this._error = String(err?.message || err);
@@ -119,6 +142,24 @@ class StreamingWebFrCard extends HTMLElement {
       this._render();
       this._restoreFocus(focus2);
     }
+  }
+
+  async _advanceCatalog() {
+    if (this._remoteLoading) return;
+    const total = this._sortedItems().length;
+    if (this._visible < total) {
+      this._visible = Math.min(total, this._visible + this._config.posters_par_lot);
+      this._render();
+      return;
+    }
+    if (!this._data?.has_more || !this._data?.next_cursor) return;
+    this._remoteLoading = true;
+    const before = total;
+    await this._load({ append: true, cursor: this._data.next_cursor });
+    const after = this._sortedItems().length;
+    this._visible = Math.min(after, before + this._config.posters_par_lot);
+    this._remoteLoading = false;
+    this._render();
   }
 
   async _syncRuntime() {
@@ -131,6 +172,7 @@ class StreamingWebFrCard extends HTMLElement {
       config_source: runtime.config_source,
       config_path: runtime.config_path,
       config_issues: runtime.config_issues || [],
+      version: runtime.version,
     };
   }
 
@@ -259,7 +301,9 @@ class StreamingWebFrCard extends HTMLElement {
     if (!this.shadowRoot) return;
     const items = this._sortedItems();
     const visible = items.slice(0, this._visible);
-    const hasMore = visible.length < items.length;
+    const hasLocalMore = visible.length < items.length;
+    const hasRemoteMore = Boolean(this._data?.has_more && this._data?.next_cursor);
+    const hasMore = hasLocalMore || hasRemoteMore;
     const providers = this._data?.providers || [];
     const catalogMode = this._view === "catalog";
     const homeSections = this._sectionDefinitions().map((section) => this._homeSection(section)).join("");
@@ -361,10 +405,15 @@ class StreamingWebFrCard extends HTMLElement {
           ${this._config.debug ? `
             <div class="debug">
               <strong>Debug</strong>
+              <span>version: ${this._esc(this._data?.version || "unknown")}</span>
               <span>view: ${this._esc(this._view)}</span>
               <span>category: ${this._esc(this._catalogCategory)}</span>
               <span>source: ${this._esc(this._data?.config_source || "unknown")}</span>
               <span>items: ${items.length}</span>
+              <span>page: ${this._esc(this._data?.page ?? 0)}</span>
+              <span>has_more: ${hasRemoteMore}</span>
+              <span>cursor: ${this._esc(this._data?.next_cursor || "—")}</span>
+              <span>search: ${this._esc(this._data?.search_mode || "—")}</span>
               <span>players: ${(this._data?.players || []).length}</span>
               <span>ids: ${this._esc((this._data?.players || []).map((p) => p.id).join(", ") || "—")}</span>
               <span>config: ${this._esc(this._data?.config_path || "—")}</span>
@@ -416,11 +465,14 @@ class StreamingWebFrCard extends HTMLElement {
             ${visible.length ? `
               <div class="grid">${visible.map((item) => this._poster(item)).join("")}</div>
               ${hasMore && !this._config.scroll_infini ? `
-                <div class="more"><button type="button" data-more>Voir ${Math.min(this._config.posters_par_lot, items.length-visible.length)} de plus</button></div>
+                <div class="more"><button type="button" data-more>${hasLocalMore ? `Voir ${Math.min(this._config.posters_par_lot, items.length-visible.length)} de plus` : "Charger la suite"}</button></div>
               ` : ""}
               ${hasMore && this._config.scroll_infini ? '<div class="sentinel"></div>' : ""}
+              ${this._remoteLoading ? '<div class="state compact"><ha-icon class="spin" icon="mdi:loading"></ha-icon>Chargement de la suite…</div>' : ""}
             ` : `
-              <div class="state"><ha-icon icon="mdi:movie-search-outline"></ha-icon>Aucun titre trouvé.</div>
+              <div class="state"><ha-icon icon="mdi:movie-search-outline"></ha-icon>${hasRemoteMore ? "Recherche dans la suite du catalogue…" : "Aucun titre trouvé."}</div>
+              ${hasRemoteMore && !this._config.scroll_infini ? '<div class="more"><button type="button" data-more>Rechercher dans la suite</button></div>' : ""}
+              ${hasRemoteMore && this._config.scroll_infini ? '<div class="sentinel"></div>' : ""}
             `}
           `}
         </div>
@@ -500,10 +552,7 @@ class StreamingWebFrCard extends HTMLElement {
       this._render();
     });
 
-    root.querySelector("[data-more]")?.addEventListener("click", () => {
-      this._visible += this._config.posters_par_lot;
-      this._render();
-    });
+    root.querySelector("[data-more]")?.addEventListener("click", () => this._advanceCatalog());
 
     root.querySelectorAll("[data-uid]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -537,10 +586,7 @@ class StreamingWebFrCard extends HTMLElement {
     if (sentinel && this._config.scroll_infini) {
       this._observer = new IntersectionObserver((entries) => {
         if (!entries.some((entry) => entry.isIntersecting)) return;
-        const total = this._sortedItems().length;
-        if (this._visible >= total) return;
-        this._visible = Math.min(total, this._visible + this._config.posters_par_lot);
-        this._render();
+        this._advanceCatalog();
       }, { rootMargin: "240px" });
       this._observer.observe(sentinel);
     }

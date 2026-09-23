@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import json
 from typing import Any
 
 import aiohttp
 
-from ..models import MediaItem, ResolvedStream
+from ..models import CatalogPage, MediaItem, ResolvedStream
 from .base import ProviderError, StreamingProvider
 from .drabam import DrabamProvider
 
@@ -83,6 +85,87 @@ class ProviderManager:
                 seen.add(item.uid)
                 items.append(item)
         return items
+
+    async def catalog_page(
+        self,
+        *,
+        provider_id: str | None = None,
+        query: str | None = None,
+        category: str | None = None,
+        cursor: str | None = None,
+        limit: int = 24,
+    ) -> CatalogPage:
+        providers = [self.get(provider_id)] if provider_id else list(self._providers.values())
+        providers.sort(key=lambda p: (p.priority, p.name.casefold()))
+        if not providers:
+            return CatalogPage()
+
+        if provider_id or len(providers) == 1:
+            return await providers[0].browse_page(
+                category=category,
+                cursor=cursor,
+                query=query,
+                limit=limit,
+            )
+
+        cursors: dict[str, str | None] = {}
+        if cursor:
+            try:
+                prefix, encoded = str(cursor).split(":", 1)
+                if prefix != "multi":
+                    raise ValueError
+                padding = "=" * (-len(encoded) % 4)
+                decoded = json.loads(base64.urlsafe_b64decode(encoded + padding))
+                if not isinstance(decoded, dict):
+                    raise ValueError
+                cursors = {str(key): str(value) for key, value in decoded.items()}
+            except Exception as err:
+                raise ProviderError("Curseur multi-provider invalide") from err
+
+        active_providers = providers if not cursor else [
+            provider for provider in providers if provider.id in cursors
+        ]
+        pages = await asyncio.gather(
+            *(
+                provider.browse_page(
+                    category=category,
+                    cursor=cursors.get(provider.id),
+                    query=query,
+                    limit=limit,
+                )
+                for provider in active_providers
+            ),
+            return_exceptions=True,
+        )
+        items: list[MediaItem] = []
+        seen: set[str] = set()
+        next_cursors: dict[str, str] = {}
+        search_modes: set[str] = set()
+        current_page = 0
+        for provider, page in zip(active_providers, pages, strict=True):
+            if isinstance(page, Exception):
+                continue
+            search_modes.add(page.search_mode)
+            current_page = max(current_page, page.page)
+            if page.has_more and page.next_cursor:
+                next_cursors[provider.id] = page.next_cursor
+            for item in page.items:
+                if item.uid not in seen:
+                    seen.add(item.uid)
+                    items.append(item)
+        next_cursor = None
+        if next_cursors:
+            encoded = base64.urlsafe_b64encode(
+                json.dumps(next_cursors, separators=(",", ":")).encode()
+            ).decode().rstrip("=")
+            next_cursor = f"multi:{encoded}"
+        return CatalogPage(
+            items=items,
+            next_cursor=next_cursor,
+            has_more=bool(next_cursors),
+            page=current_page,
+            search_mode="+".join(sorted(search_modes)) or ("provider" if query else "local"),
+        )
 
     async def details(self, provider_id: str, provider_item_id: str) -> MediaItem:
         return await self.get(provider_id).details(provider_item_id)
