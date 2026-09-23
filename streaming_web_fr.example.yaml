@@ -1,0 +1,68 @@
+# Streaming Web FR
+# Copy this file to:
+#   /config/streaming_web_fr.yaml
+#
+# This YAML file is the canonical configuration source when present.
+# The number of providers and Android TV destinations is not limited.
+
+version: 1
+
+providers:
+  - id: provider_main
+    name: Provider principal
+    type: drabam
+    enabled: true
+    priority: 100
+    base_url: https://example.com/access-prefix
+
+    # Authentication modes:
+    # none | basic | form_login | api_key | bearer | cookie | custom_headers
+    auth:
+      mode: none
+
+      # Optional examples:
+      # username: ""
+      # password: ""
+      # api_key: ""
+      # api_key_header: X-Api-Key
+      # bearer: ""
+      # cookie: ""
+      # custom_headers: |
+      #   {"X-Custom-Header": "value"}
+
+      # form_login only:
+      # login_url: https://example.com/login
+      # username_field: username
+      # password_field: password
+      # login_extra_fields: |
+      #   {"remember": "1"}
+
+  # Add as many providers as required:
+  #
+  # - id: provider_secondary
+  #   name: Provider secondaire
+  #   type: future_provider
+  #   enabled: true
+  #   priority: 200
+  #   base_url: https://example.net
+  #   auth:
+  #     mode: basic
+  #     username: user
+  #     password: change_me
+
+players:
+  - id: androidtv1
+    name: AndroidTV1
+    type: android_tv
+    media_player: media_player.androidtv1
+    remote: remote.androidtv1
+    adb_player: media_player.androidtv1_adb
+
+  # Add as many destinations as required:
+  #
+  # - id: androidtv2
+  #   name: AndroidTV2
+  #   type: android_tv
+  #   media_player: media_player.androidtv2
+  #   remote: remote.androidtv2
+  #   adb_player: media_player.androidtv2_adb
