@@ -13,6 +13,7 @@ from .const import CARD_RESOURCE_PATH, CONF_PLAYERS, CONF_PROVIDERS, DOMAIN
 from .lovelace_resource import async_register_lovelace_resource, async_remove_lovelace_resource
 from .playback import async_launch_vlc
 from .providers import ProviderManager
+from .settings import async_load_yaml_config, config_path, fallback_from_entry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,31 +23,40 @@ async def async_setup(hass, config):
     return True
 
 
-def _settings(entry) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    providers = entry.options.get(CONF_PROVIDERS, entry.data.get(CONF_PROVIDERS, []))
-    players = entry.options.get(CONF_PLAYERS, entry.data.get(CONF_PLAYERS, []))
-    return list(providers or []), list(players or [])
+async def _async_effective_config(hass, entry):
+    yaml_config = await async_load_yaml_config(hass)
+    if yaml_config is not None:
+        return yaml_config, "yaml"
+    return fallback_from_entry(entry), "config_entry"
+
+
+async def _async_apply_runtime_config(hass, runtime):
+    config, source = await _async_effective_config(hass, runtime["entry"])
+    session = async_get_clientsession(hass)
+    runtime["manager"] = ProviderManager(session, config.get(CONF_PROVIDERS) or [])
+    runtime["players"] = list(config.get(CONF_PLAYERS) or [])
+    runtime["config_source"] = source
+    runtime["config_path"] = config_path(hass)
+    return source
 
 
 async def async_setup_entry(hass, entry):
     hass.data.setdefault(DOMAIN, {})
-    providers, players = _settings(entry)
-    session = async_get_clientsession(hass)
-    hass.data[DOMAIN][entry.entry_id] = {
-        "manager": ProviderManager(session, providers),
-        "players": players,
+    runtime = {
+        "manager": None,
+        "players": [],
         "entry": entry,
+        "config_source": None,
+        "config_path": config_path(hass),
     }
+    hass.data[DOMAIN][entry.entry_id] = runtime
+    await _async_apply_runtime_config(hass, runtime)
 
     await _register_frontend(hass)
     await async_register_lovelace_resource(hass)
     _register_ws(hass)
-    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
+    _register_services(hass)
     return True
-
-
-async def _async_update_listener(hass, entry):
-    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass, entry):
@@ -101,6 +111,32 @@ def _player(players, player_id):
     raise ValueError(f"Destination inconnue : {player_id}")
 
 
+def _register_services(hass):
+    if hass.data[DOMAIN].get("_services_registered"):
+        return
+
+    async def _reload_config(call):
+        runtimes = [
+            value
+            for key, value in hass.data.get(DOMAIN, {}).items()
+            if not str(key).startswith("_") and isinstance(value, dict)
+        ]
+        for runtime in runtimes:
+            try:
+                source = await _async_apply_runtime_config(hass, runtime)
+                _LOGGER.info(
+                    "Streaming Web FR configuration reloaded from %s (%s)",
+                    source,
+                    runtime.get("config_path"),
+                )
+            except Exception:
+                _LOGGER.exception("Unable to reload Streaming Web FR configuration")
+                raise
+
+    hass.services.async_register(DOMAIN, "reload_config", _reload_config)
+    hass.data[DOMAIN]["_services_registered"] = True
+
+
 def _register_ws(hass):
     if hass.data[DOMAIN].get("_ws_registered"):
         return
@@ -130,6 +166,7 @@ def _register_ws(hass):
                     "providers": data["manager"].public_providers(),
                     "players": _public_players(data["players"]),
                     "items": [item.as_dict() for item in items],
+                    "config_source": data.get("config_source"),
                 },
             )
         except Exception as err:
