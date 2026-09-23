@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.5.0
+
+First stable release.
+
+- Promotes the validated multi-provider architecture to stable.
+- Uses `/config/streaming_web_fr.yaml` as the canonical configuration source when present.
+- Supports unlimited providers and Android TV destinations.
+- Includes extensible provider authentication modes.
+- Includes the Drabam provider foundation.
+- Includes Android TV / VLC playback via Android Debug Bridge.
+- Adds `streaming_web_fr.reload_config` for YAML reload without Home Assistant restart.
+- Includes responsive Lovelace browsing, search, filtering, sorting, pagination and optional infinite scroll.
+- Includes runtime player synchronization and optional card diagnostics.
+- YAML parser accepts both list and ID-keyed mapping syntax.
+- Invalid provider/player blocks are exposed through diagnostics instead of being silently discarded.
+- Validated on the current Home Assistant test environment.
+
 ## 0.1.0-beta.4
 
 Player discovery and diagnostics hotfix.
