@@ -40,6 +40,24 @@ def _clean(value: str | None) -> str:
     return re.sub(r"\s+", " ", html_lib.unescape(_TAG_RE.sub(" ", value or ""))).strip()
 
 
+def _norm(value: str | None) -> str:
+    text = unicodedata.normalize("NFKD", _clean(value)).encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"\s+", " ", text).strip().casefold()
+
+
+def _section_key(value: str | None) -> str | None:
+    text = _norm(value)
+    if "dernier" in text and "ajout" in text:
+        return "latest"
+    if "affiche" in text:
+        return "featured"
+    if "animation" in text:
+        return "animation"
+    if "doc" in text or "spectacle" in text:
+        return "docs_shows"
+    return None
+
+
 class DrabamProvider(StreamingProvider):
     provider_type = "drabam"
 
