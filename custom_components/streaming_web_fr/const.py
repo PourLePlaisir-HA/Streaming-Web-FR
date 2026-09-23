@@ -2,7 +2,7 @@ from __future__ import annotations
 
 DOMAIN = "streaming_web_fr"
 NAME = "Streaming Web FR"
-VERSION = "0.6.0-beta.4"
+VERSION = "0.6.0-beta.5"
 
 CONF_PROVIDERS = "providers"
 CONF_PLAYERS = "players"

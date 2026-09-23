@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 from abc import ABC, abstractmethod
 from typing import Any
+from urllib.parse import urljoin, urlsplit
 
 import aiohttp
+from yarl import URL
 
 from ..const import (
     AUTH_API_KEY,
@@ -33,6 +35,10 @@ class StreamingProvider(ABC):
         self.priority = int(config.get("priority") or 100)
         self.enabled = bool(config.get("enabled", True))
         self._form_logged_in = False
+        # Home Assistant's shared ClientSession may intentionally use a dummy
+        # cookie jar. Providers still need browser-like, domain-scoped cookies
+        # across catalog, details and player requests.
+        self._cookie_jar = aiohttp.CookieJar(unsafe=True)
 
     def _request_kwargs(self) -> dict[str, Any]:
         auth = self.config.get("auth") or {}
@@ -92,9 +98,11 @@ class StreamingProvider(ABC):
             login_url,
             data=payload,
             headers={"User-Agent": "Mozilla/5.0 (Home Assistant; Streaming Web FR)"},
+            cookies=self._cookie_jar.filter_cookies(URL(login_url)),
             timeout=aiohttp.ClientTimeout(total=20),
             allow_redirects=True,
         ) as response:
+            self._cookie_jar.update_cookies(response.cookies, response.url)
             if response.status >= 400:
                 raise ProviderError(f"Échec connexion provider HTTP {response.status}")
             await response.read()
@@ -108,18 +116,55 @@ class StreamingProvider(ABC):
     ) -> tuple[str, str, int, str]:
         await self._ensure_form_login()
         kwargs = self._request_kwargs()
-        headers = dict(kwargs.pop("headers", {}))
-        if referer:
-            headers["Referer"] = referer
-        async with self.session.get(
-            url,
-            headers=headers,
-            timeout=aiohttp.ClientTimeout(total=20),
-            allow_redirects=True,
-            **kwargs,
-        ) as response:
-            body = await response.text(errors="replace")
-            return body, str(response.url), response.status, response.headers.get("Content-Type", "")
+        base_headers = dict(kwargs.pop("headers", {}))
+        current_url = str(url)
+        current_referer = referer
+        seen = {current_url}
+        redirect_trace: list[str] = []
+
+        for _ in range(11):
+            headers = dict(base_headers)
+            if current_referer:
+                headers["Referer"] = current_referer
+            async with self.session.get(
+                current_url,
+                headers=headers,
+                cookies=self._cookie_jar.filter_cookies(URL(current_url)),
+                timeout=aiohttp.ClientTimeout(total=20),
+                allow_redirects=False,
+                **kwargs,
+            ) as response:
+                self._cookie_jar.update_cookies(response.cookies, response.url)
+                location = response.headers.get("Location")
+                if response.status in {301, 302, 303, 307, 308} and location:
+                    next_url = urljoin(str(response.url), location)
+                    current_path = urlsplit(str(response.url)).path or "/"
+                    next_path = urlsplit(next_url).path or "/"
+                    redirect_trace.append(
+                        f"{response.status} {current_path} → {next_path}"
+                    )
+                    await response.read()
+                    if next_url in seen:
+                        raise ProviderError(
+                            "Boucle de redirection HTTP : "
+                            + " | ".join(redirect_trace[-6:])
+                        )
+                    seen.add(next_url)
+                    current_referer = str(response.url)
+                    current_url = next_url
+                    continue
+
+                body = await response.text(errors="replace")
+                return (
+                    body,
+                    str(response.url),
+                    response.status,
+                    response.headers.get("Content-Type", ""),
+                )
+
+        raise ProviderError(
+            "Trop de redirections HTTP : " + " | ".join(redirect_trace[-6:])
+        )
 
     @abstractmethod
     async def browse(self, *, category: str | None = None) -> list[MediaItem]:

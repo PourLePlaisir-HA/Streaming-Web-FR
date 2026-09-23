@@ -1,3 +1,12 @@
+## 0.6.0-beta.5
+
+- Added a provider-scoped cookie jar independent from Home Assistant's shared HTTP session.
+- Persisted provider cookies across catalog, details, player and manifest requests.
+- Replaced automatic redirects with bounded manual redirect handling.
+- Applied updated cookies before every redirect, matching browser navigation more closely.
+- Added explicit, path-only redirect traces when the provider still returns a loop.
+- Kept beta.4 URL and referer validation unchanged.
+
 ## 0.6.0-beta.4
 
 - Preserved the source catalog URL for every parsed media item.
