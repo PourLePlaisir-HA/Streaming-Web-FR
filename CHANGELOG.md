@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-beta.2
+
+Configuration hotfix.
+
+- Fixes an `Unknown error occurred` when saving an Android TV destination from the Home Assistant Options Flow.
+- Removes the redundant integration update listener because `OptionsFlowWithReload` already reloads the Config Entry.
+- Initializes provider/player edit-flow state explicitly.
+- No change to provider catalog parsing, HLS resolution or VLC launch logic.
+
 ## 0.1.0-beta.1
 
 Initial architecture beta.
