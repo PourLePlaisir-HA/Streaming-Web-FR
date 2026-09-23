@@ -1,0 +1,92 @@
+{
+  "title": "Streaming Web FR",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Premier provider",
+        "description": "Configurez le premier provider. D'autres providers et destinations Android TV pourront être ajoutés ensuite depuis Configurer.",
+        "data": {
+          "provider_name": "Nom affiché",
+          "provider_id": "Identifiant interne",
+          "provider_type": "Type de provider",
+          "base_url": "URL de base",
+          "enabled": "Activé",
+          "priority": "Priorité",
+          "auth_mode": "Authentification",
+          "username": "Login / utilisateur",
+          "password": "Mot de passe",
+          "api_key": "API key",
+          "api_key_header": "Header API key",
+          "bearer": "Bearer token",
+          "cookie": "Cookie / session",
+          "custom_headers": "Headers personnalisés (JSON)",
+          "login_url": "URL du formulaire de connexion",
+          "username_field": "Nom du champ login",
+          "password_field": "Nom du champ mot de passe",
+          "login_extra_fields": "Champs supplémentaires du formulaire (JSON)"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Une seule instance de Streaming Web FR est autorisée."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configurer Streaming Web FR",
+        "menu_options": {
+          "add_provider": "Ajouter un provider",
+          "remove_provider": "Supprimer un provider",
+          "add_player": "Ajouter une destination Android TV",
+          "remove_player": "Supprimer une destination Android TV"
+        }
+      },
+      "add_provider": {
+        "title": "Ajouter un provider",
+        "data": {
+          "provider_name": "Nom affiché",
+          "provider_id": "Identifiant interne",
+          "provider_type": "Type de provider",
+          "base_url": "URL de base",
+          "enabled": "Activé",
+          "priority": "Priorité",
+          "auth_mode": "Authentification",
+          "username": "Login / utilisateur",
+          "password": "Mot de passe",
+          "api_key": "API key",
+          "api_key_header": "Header API key",
+          "bearer": "Bearer token",
+          "cookie": "Cookie / session",
+          "custom_headers": "Headers personnalisés (JSON)",
+          "login_url": "URL du formulaire de connexion",
+          "username_field": "Nom du champ login",
+          "password_field": "Nom du champ mot de passe",
+          "login_extra_fields": "Champs supplémentaires du formulaire (JSON)"
+        }
+      },
+      "remove_provider": {
+        "title": "Supprimer un provider",
+        "data": {
+          "provider_id": "Provider"
+        }
+      },
+      "add_player": {
+        "title": "Ajouter une destination Android TV",
+        "data": {
+          "player_name": "Nom affiché",
+          "player_id": "Identifiant interne",
+          "media_player": "Media player principal",
+          "remote": "Remote",
+          "adb_player": "Media player Android Debug Bridge"
+        }
+      },
+      "remove_player": {
+        "title": "Supprimer une destination Android TV",
+        "data": {
+          "player_id": "Destination"
+        }
+      }
+    }
+  }
+}
