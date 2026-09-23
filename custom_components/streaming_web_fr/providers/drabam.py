@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html as html_lib
 import re
+import unicodedata
 from urllib.parse import urljoin, urlsplit
 
 from ..models import MediaItem, ResolvedStream
@@ -27,6 +28,8 @@ _META_DESC_RE = re.compile(
     re.IGNORECASE,
 )
 _H1_RE = re.compile(r"<h1[^>]*>(.*?)</h1>", re.IGNORECASE | re.DOTALL)
+_HEADING_RE = re.compile(r"<h[1-6][^>]*>(.*?)</h[1-6]>", re.IGNORECASE | re.DOTALL)
+_ANCHOR_RE = re.compile(r'<a[^>]+href=["\\'](?P<href>[^"\\']+)["\\'][^>]*>(?P<body>.*?)</a>', re.IGNORECASE | re.DOTALL)
 _OG_IMAGE_RE = re.compile(
     r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
     re.IGNORECASE,
@@ -54,13 +57,30 @@ class DrabamProvider(StreamingProvider):
             base = base[: -len("/home/drabam")]
         return f"{base.rstrip('/')}/b/drabam/{provider_item_id}"
 
-    async def browse(self, *, category: str | None = None) -> list[MediaItem]:
-        source, final_url, status, _ = await self._get_text(self._home_url())
-        if status >= 400:
-            raise ProviderError(f"Drabam HTTP {status}")
+    def _catalog_url(self, source: str, final_url: str) -> str | None:
+        fallback = None
+        for match in _ANCHOR_RE.finditer(source):
+            href = match.group("href")
+            if "/c/drabam/" not in href:
+                continue
+            label = _norm(match.group("body"))
+            url = urljoin(final_url, href)
+            if label == "tout" or "explorer le catalogue" in label:
+                return url
+            fallback = fallback or url
+        return fallback
+
+    def _extract_items(self, source: str, final_url: str) -> list[MediaItem]:
+        headings: list[tuple[int, str, str]] = []
+        for heading in _HEADING_RE.finditer(source):
+            label = _clean(heading.group(1))
+            key = _section_key(label)
+            if key:
+                headings.append((heading.start(), key, label))
 
         out: list[MediaItem] = []
         seen: set[str] = set()
+        section_ranks: dict[str, int] = {}
         for match in _LINK_RE.finditer(source):
             item_id = match.group("id")
             if item_id in seen:
@@ -79,6 +99,24 @@ class DrabamProvider(StreamingProvider):
             year = int(year_match.group(1)) if year_match else None
             clean_title = _YEAR_RE.sub("", title).strip(" -–—()") or title
 
+            section_key = None
+            section_label = None
+            for position, key, label in headings:
+                if position > match.start():
+                    break
+                section_key = key
+                section_label = label
+
+            extra = {}
+            if section_key:
+                rank = section_ranks.get(section_key, 0)
+                section_ranks[section_key] = rank + 1
+                extra = {
+                    "home_section": section_key,
+                    "home_section_label": section_label,
+                    "home_rank": rank,
+                }
+
             out.append(
                 MediaItem(
                     provider_id=self.id,
@@ -87,9 +125,34 @@ class DrabamProvider(StreamingProvider):
                     year=year,
                     poster=poster,
                     page_url=urljoin(final_url, match.group("href")),
+                    extra=extra,
                 )
             )
         return out
+
+    async def browse(self, *, category: str | None = None) -> list[MediaItem]:
+        source, final_url, status, _ = await self._get_text(self._home_url())
+        if status >= 400:
+            raise ProviderError(f"Drabam HTTP {status}")
+
+        home_items = self._extract_items(source, final_url)
+        wanted = str(category or "").strip().casefold()
+
+        if wanted in {"latest", "featured", "animation", "docs_shows"}:
+            return [
+                item
+                for item in home_items
+                if str(item.extra.get("home_section") or "") == wanted
+            ]
+
+        if wanted in {"all", "catalog", "catalogue"}:
+            catalog_url = self._catalog_url(source, final_url)
+            if catalog_url:
+                catalog_source, catalog_final_url, catalog_status, _ = await self._get_text(catalog_url)
+                if catalog_status < 400:
+                    return self._extract_items(catalog_source, catalog_final_url)
+
+        return home_items
 
     async def details(self, provider_item_id: str) -> MediaItem:
         page_url = self._detail_url(provider_item_id)
