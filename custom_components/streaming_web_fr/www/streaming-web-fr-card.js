@@ -2,6 +2,7 @@ const SWFR_DEFAULTS = {
   title: "Streaming Web",
   searchbox: true,
   posters_par_lot: 8,
+  home_section_count: 10,
   scroll_infini: false,
   debug: false,
 };
@@ -19,6 +20,8 @@ class StreamingWebFrCard extends HTMLElement {
     this._provider = "";
     this._query = "";
     this._sort = "default";
+    this._view = "home";
+    this._catalogCategory = "all";
     this._visible = SWFR_DEFAULTS.posters_par_lot;
     this._searchTimer = null;
     this._popup = null;
@@ -34,6 +37,8 @@ class StreamingWebFrCard extends HTMLElement {
     };
     const batch = Number(this._config.posters_par_lot);
     this._config.posters_par_lot = Number.isFinite(batch) && batch > 0 ? Math.floor(batch) : 8;
+    const homeCount = Number(this._config.home_section_count);
+    this._config.home_section_count = Number.isFinite(homeCount) && homeCount > 0 ? Math.floor(homeCount) : 10;
     this._config.searchbox = this._config.searchbox !== false;
     this._config.scroll_infini = this._config.scroll_infini === true;
     this._config.debug = this._config.debug === true;
@@ -55,6 +60,7 @@ class StreamingWebFrCard extends HTMLElement {
       title: "Streaming Web",
       searchbox: true,
       posters_par_lot: 8,
+      home_section_count: 10,
       scroll_infini: false,
       debug: false,
     };
@@ -101,7 +107,8 @@ class StreamingWebFrCard extends HTMLElement {
     try {
       const msg = { type: "streaming_web_fr/catalog" };
       if (this._provider) msg.provider_id = this._provider;
-      if (this._query.trim()) msg.query = this._query.trim();
+      if (this._view === "catalog") msg.category = this._catalogCategory || "all";
+      if (this._view === "catalog" && this._query.trim()) msg.query = this._query.trim();
       this._data = await this._hass.callWS(msg);
       this._loaded = true;
     } catch (err) {
@@ -143,6 +150,42 @@ class StreamingWebFrCard extends HTMLElement {
 
   _providerName(id) {
     return this._data?.providers?.find((p) => p.id === id)?.name || id || "Provider";
+  }
+
+  _sectionDefinitions() {
+    return [
+      { key: "latest", label: "Derniers ajouts" },
+      { key: "featured", label: "À l'affiche" },
+      { key: "animation", label: "Animations" },
+      { key: "docs_shows", label: "Docs & Spectacles" },
+    ];
+  }
+
+  _sectionLabel(key) {
+    if (key === "all") return "Tout le catalogue";
+    return this._sectionDefinitions().find((section) => section.key === key)?.label || "Catalogue";
+  }
+
+  _homeItems(key) {
+    return (this._data?.items || [])
+      .filter((item) => String(item?.extra?.home_section || "") === key)
+      .sort((a, b) => Number(a?.extra?.home_rank ?? 9999) - Number(b?.extra?.home_rank ?? 9999));
+  }
+
+  _homeSection(section) {
+    const items = this._homeItems(section.key).slice(0, this._config.home_section_count);
+    if (!items.length) return "";
+    return `
+      <section class="home-section">
+        <div class="section-head">
+          <h2>${this._esc(section.label)}</h2>
+          <button type="button" class="see-all" data-open-category="${this._esc(section.key)}">Voir tout <ha-icon icon="mdi:chevron-right"></ha-icon></button>
+        </div>
+        <div class="rail">
+          ${items.map((item) => this._poster(item)).join("")}
+        </div>
+      </section>
+    `;
   }
 
   _poster(item) {
@@ -218,25 +261,36 @@ class StreamingWebFrCard extends HTMLElement {
     const visible = items.slice(0, this._visible);
     const hasMore = visible.length < items.length;
     const providers = this._data?.providers || [];
+    const catalogMode = this._view === "catalog";
+    const homeSections = this._sectionDefinitions().map((section) => this._homeSection(section)).join("");
 
     this.shadowRoot.innerHTML = `
       <style>
         :host{display:block;font-family:var(--paper-font-body1_-_font-family,system-ui,sans-serif)}
         ha-card{overflow:hidden;border-radius:var(--ha-card-border-radius,16px);background:linear-gradient(145deg,rgba(18,18,24,.96),rgba(28,28,38,.94));color:#fff}
         .wrap{padding:16px}
-        .head{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:12px}
+        .head{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:14px}
         h1{font-size:20px;line-height:1.2;margin:0;font-weight:700}
         .count{font-size:12px;color:rgba(255,255,255,.6)}
         .head-actions{display:flex;align-items:center;gap:8px}
-        .refresh{width:34px;height:34px;border:0;border-radius:999px;background:rgba(255,255,255,.07);color:#fff;display:grid;place-items:center;cursor:pointer}
+        .refresh,.back{height:34px;border:0;border-radius:999px;background:rgba(255,255,255,.07);color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+        .refresh{width:34px}.back{padding:0 10px 0 8px}
+        .home-section{margin:4px 0 22px}
+        .section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+        .section-head h2{font-size:16px;margin:0}
+        .see-all{display:flex;align-items:center;gap:2px;border:0;background:none;color:rgba(255,255,255,.72);cursor:pointer;padding:4px 0;font-size:12px}
+        .see-all ha-icon{--mdc-icon-size:18px}
+        .rail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(125px,145px);gap:11px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:thin;overscroll-behavior-inline:contain}
+        .explore{display:flex;justify-content:center;margin:6px 0 2px}
+        .explore button{display:flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.1);color:#fff;border-radius:999px;padding:10px 18px;cursor:pointer;font-weight:600}
         .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
         .search-wrap{position:relative;flex:1 1 240px;min-width:180px}
         .search{box-sizing:border-box;width:100%;height:40px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(255,255,255,.07);color:#fff;padding:0 38px 0 12px;outline:none}
         .search:focus{border-color:rgba(255,255,255,.4);box-shadow:0 0 0 2px rgba(255,255,255,.08)}
         .search-icon{position:absolute;right:10px;top:9px;color:rgba(255,255,255,.55)}
         select{height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:#fff;padding:0 10px}
-        .providers{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
-        .providers::-webkit-scrollbar{display:none}
+        .providers,.categories{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+        .providers::-webkit-scrollbar,.categories::-webkit-scrollbar{display:none}
         .chip{white-space:nowrap;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.06);color:#ddd;border-radius:999px;padding:7px 11px;cursor:pointer}
         .chip.active{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)}
         .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:14px 11px}
@@ -281,6 +335,7 @@ class StreamingWebFrCard extends HTMLElement {
         @media(max-width:600px){
           .wrap{padding:12px}
           .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 7px}
+          .rail{grid-auto-columns:minmax(105px,33vw)}
           .poster-title{font-size:11px}
           .modal-grid{grid-template-columns:105px 1fr;gap:14px}
           .modal-poster{width:105px}
@@ -291,7 +346,10 @@ class StreamingWebFrCard extends HTMLElement {
       <ha-card>
         <div class="wrap">
           <div class="head">
-            <h1>${this._esc(this._config.title)}</h1>
+            <div class="head-actions">
+              ${catalogMode ? `<button class="back" type="button" data-home><ha-icon icon="mdi:chevron-left"></ha-icon>Accueil</button>` : ""}
+              <h1>${this._esc(catalogMode ? this._sectionLabel(this._catalogCategory) : this._config.title)}</h1>
+            </div>
             <div class="head-actions">
               <span class="count">${items.length} titre${items.length > 1 ? "s" : ""}</span>
               <button class="refresh" type="button" title="Rafraîchir" aria-label="Rafraîchir">
@@ -300,34 +358,13 @@ class StreamingWebFrCard extends HTMLElement {
             </div>
           </div>
 
-          <div class="toolbar">
-            ${this._config.searchbox ? `
-              <div class="search-wrap">
-                <input class="search" type="search" value="${this._esc(this._query)}" placeholder="Rechercher un titre…">
-                <ha-icon class="search-icon" icon="mdi:magnify"></ha-icon>
-              </div>` : ""}
-            <select class="sort" aria-label="Tri">
-              <option value="default" ${this._sort==="default"?"selected":""}>Ordre provider</option>
-              <option value="title" ${this._sort==="title"?"selected":""}>Titre A–Z</option>
-              <option value="year_desc" ${this._sort==="year_desc"?"selected":""}>Année ↓</option>
-              <option value="year_asc" ${this._sort==="year_asc"?"selected":""}>Année ↑</option>
-              <option value="provider" ${this._sort==="provider"?"selected":""}>Provider</option>
-            </select>
-          </div>
-
-          <div class="providers">
-            <button class="chip ${this._provider ? "" : "active"}" type="button" data-provider="">Tous</button>
-            ${providers.map((p) => `
-              <button class="chip ${this._provider===p.id?"active":""}" type="button" data-provider="${this._esc(p.id)}">
-                ${this._esc(p.name)}
-              </button>
-            `).join("")}
-          </div>
-
           ${this._config.debug ? `
             <div class="debug">
               <strong>Debug</strong>
+              <span>view: ${this._esc(this._view)}</span>
+              <span>category: ${this._esc(this._catalogCategory)}</span>
               <span>source: ${this._esc(this._data?.config_source || "unknown")}</span>
+              <span>items: ${items.length}</span>
               <span>players: ${(this._data?.players || []).length}</span>
               <span>ids: ${this._esc((this._data?.players || []).map((p) => p.id).join(", ") || "—")}</span>
               <span>config: ${this._esc(this._data?.config_path || "—")}</span>
@@ -339,14 +376,52 @@ class StreamingWebFrCard extends HTMLElement {
             <div class="state"><ha-icon class="spin" icon="mdi:loading"></ha-icon>Chargement du catalogue…</div>
           ` : this._error ? `
             <div class="state error"><ha-icon icon="mdi:alert-circle-outline"></ha-icon>${this._esc(this._error)}</div>
-          ` : visible.length ? `
-            <div class="grid">${visible.map((item) => this._poster(item)).join("")}</div>
-            ${hasMore && !this._config.scroll_infini ? `
-              <div class="more"><button type="button" data-more>Voir ${Math.min(this._config.posters_par_lot, items.length-visible.length)} de plus</button></div>
-            ` : ""}
-            ${hasMore && this._config.scroll_infini ? '<div class="sentinel"></div>' : ""}
+          ` : !catalogMode ? `
+            ${homeSections || `<div class="state"><ha-icon icon="mdi:movie-search-outline"></ha-icon>Aucune section détectée sur la page d'accueil.</div>`}
+            <div class="explore">
+              <button type="button" data-open-category="all"><ha-icon icon="mdi:view-grid-outline"></ha-icon>Explorer le catalogue</button>
+            </div>
           ` : `
-            <div class="state"><ha-icon icon="mdi:movie-search-outline"></ha-icon>Aucun titre trouvé.</div>
+            <div class="categories">
+              <button class="chip ${this._catalogCategory==="all"?"active":""}" type="button" data-category="all">Tout</button>
+              ${this._sectionDefinitions().map((section) => `
+                <button class="chip ${this._catalogCategory===section.key?"active":""}" type="button" data-category="${this._esc(section.key)}">${this._esc(section.label)}</button>
+              `).join("")}
+            </div>
+
+            <div class="toolbar">
+              ${this._config.searchbox ? `
+                <div class="search-wrap">
+                  <input class="search" type="search" value="${this._esc(this._query)}" placeholder="Rechercher un titre…">
+                  <ha-icon class="search-icon" icon="mdi:magnify"></ha-icon>
+                </div>` : ""}
+              <select class="sort" aria-label="Tri">
+                <option value="default" ${this._sort==="default"?"selected":""}>Ordre provider</option>
+                <option value="title" ${this._sort==="title"?"selected":""}>Titre A–Z</option>
+                <option value="year_desc" ${this._sort==="year_desc"?"selected":""}>Année ↓</option>
+                <option value="year_asc" ${this._sort==="year_asc"?"selected":""}>Année ↑</option>
+                <option value="provider" ${this._sort==="provider"?"selected":""}>Provider</option>
+              </select>
+            </div>
+
+            <div class="providers">
+              <button class="chip ${this._provider ? "" : "active"}" type="button" data-provider="">Tous</button>
+              ${providers.map((p) => `
+                <button class="chip ${this._provider===p.id?"active":""}" type="button" data-provider="${this._esc(p.id)}">
+                  ${this._esc(p.name)}
+                </button>
+              `).join("")}
+            </div>
+
+            ${visible.length ? `
+              <div class="grid">${visible.map((item) => this._poster(item)).join("")}</div>
+              ${hasMore && !this._config.scroll_infini ? `
+                <div class="more"><button type="button" data-more>Voir ${Math.min(this._config.posters_par_lot, items.length-visible.length)} de plus</button></div>
+              ` : ""}
+              ${hasMore && this._config.scroll_infini ? '<div class="sentinel"></div>' : ""}
+            ` : `
+              <div class="state"><ha-icon icon="mdi:movie-search-outline"></ha-icon>Aucun titre trouvé.</div>
+            `}
           `}
         </div>
       </ha-card>
@@ -358,6 +433,37 @@ class StreamingWebFrCard extends HTMLElement {
 
   _wire() {
     const root = this.shadowRoot;
+
+    root.querySelector("[data-home]")?.addEventListener("click", () => {
+      this._view = "home";
+      this._catalogCategory = "all";
+      this._query = "";
+      this._visible = this._config.posters_par_lot;
+      this._loaded = false;
+      this._load();
+    });
+
+    root.querySelectorAll("[data-open-category]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this._view = "catalog";
+        this._catalogCategory = button.dataset.openCategory || "all";
+        this._query = "";
+        this._visible = this._config.posters_par_lot;
+        this._loaded = false;
+        this._load();
+      });
+    });
+
+    root.querySelectorAll("[data-category]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this._catalogCategory = button.dataset.category || "all";
+        this._query = "";
+        this._visible = this._config.posters_par_lot;
+        this._loaded = false;
+        this._load();
+      });
+    });
+
     root.querySelectorAll("[data-provider]").forEach((button) => {
       button.addEventListener("click", () => {
         this._provider = button.dataset.provider || "";
