@@ -4,9 +4,9 @@
 
 > This repository is fully independent from Streaming Top FR. It shares no runtime, storage, provider, or service dependency with that project.
 
-## v0.1.0-beta.4
+## v0.5.0
 
-First architecture beta:
+First stable public foundation:
 
 - unlimited configurable providers;
 - provider priority and enable/disable state;
