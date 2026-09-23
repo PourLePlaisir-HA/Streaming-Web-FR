@@ -67,11 +67,14 @@ type: custom:streaming-web-fr-card
 title: Streaming Web
 searchbox: true
 posters_par_lot: 8
+home_section_count: 10
 scroll_infini: false
 debug: false
 ```
 
-Set `debug: true` temporarily for diagnostics. The card can then expose the active configuration source, YAML path, detected Android TV destinations and parser issues.
+If `debug` is omitted, it defaults to `false`. Set `debug: true` temporarily for diagnostics. The card can then expose the current view/category, item count, active configuration source, YAML path, detected Android TV destinations and parser issues.
+
+The default home view mirrors the provider's editorial structure with horizontal rails for **Derniers ajouts**, **À l'affiche**, **Animations** and **Docs & Spectacles**. **Explorer le catalogue** opens the complete catalog, while **Voir tout** opens the corresponding section.
 
 ## YAML configuration
 
