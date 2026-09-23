@@ -33,6 +33,10 @@ def _auth_from_input(data: dict[str, Any]) -> dict[str, Any]:
         "bearer": data.get("bearer") or "",
         "cookie": data.get("cookie") or "",
         "custom_headers": data.get("custom_headers") or "",
+        "login_url": data.get("login_url") or "",
+        "username_field": data.get("username_field") or "username",
+        "password_field": data.get("password_field") or "password",
+        "login_extra_fields": data.get("login_extra_fields") or "",
     }
 
 
@@ -100,6 +104,14 @@ def _provider_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
             vol.Optional("cookie", default=auth.get("cookie", "")):
                 selector.TextSelector(selector.TextSelectorConfig(multiline=True)),
             vol.Optional("custom_headers", default=auth.get("custom_headers", "")):
+                selector.TextSelector(selector.TextSelectorConfig(multiline=True)),
+            vol.Optional("login_url", default=auth.get("login_url", "")):
+                selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.URL)),
+            vol.Optional("username_field", default=auth.get("username_field", "username")):
+                selector.TextSelector(),
+            vol.Optional("password_field", default=auth.get("password_field", "password")):
+                selector.TextSelector(),
+            vol.Optional("login_extra_fields", default=auth.get("login_extra_fields", "")):
                 selector.TextSelector(selector.TextSelectorConfig(multiline=True)),
         }
     )
