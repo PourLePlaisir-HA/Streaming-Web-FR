@@ -1,0 +1,19 @@
+{
+  "domain": "streaming_web_fr",
+  "name": "Streaming Web FR",
+  "version": "0.1.0-beta.1",
+  "config_flow": true,
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "documentation": "https://github.com/PourLePlaisir-HA/Streaming-Web-FR",
+  "issue_tracker": "https://github.com/PourLePlaisir-HA/Streaming-Web-FR/issues",
+  "codeowners": [
+    "@PourLePlaisir-HA"
+  ],
+  "single_config_entry": true,
+  "integration_type": "service",
+  "dependencies": [
+    "http",
+    "lovelace"
+  ]
+}
