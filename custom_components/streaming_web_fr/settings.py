@@ -14,17 +14,41 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "version": 1,
     CONF_PROVIDERS: [],
     CONF_PLAYERS: [],
+    "_issues": [],
 }
 
 
-def _normalize_provider(raw: Any) -> dict[str, Any] | None:
+def _section_items(raw: Any):
+    """Yield (label, mapping) from either YAML list or id-keyed mapping."""
+    if isinstance(raw, list):
+        for index, item in enumerate(raw):
+            yield str(index), item
+        return
+    if isinstance(raw, dict):
+        for key, item in raw.items():
+            if isinstance(item, dict):
+                item = dict(item)
+                item.setdefault("id", str(key))
+            yield str(key), item
+
+
+def _normalize_provider(raw: Any) -> tuple[dict[str, Any] | None, str | None]:
     if not isinstance(raw, dict):
-        return None
+        return None, "provider must be a mapping"
     provider_id = str(raw.get("id") or "").strip()
     provider_type = str(raw.get("type") or "").strip().casefold()
     base_url = str(raw.get("base_url") or "").strip().rstrip("/")
-    if not provider_id or not provider_type or not base_url:
-        return None
+    missing = [
+        key
+        for key, value in (
+            ("id", provider_id),
+            ("type", provider_type),
+            ("base_url", base_url),
+        )
+        if not value
+    ]
+    if missing:
+        return None, f"missing {', '.join(missing)}"
     auth = raw.get("auth") if isinstance(raw.get("auth"), dict) else {}
     return {
         "id": provider_id,
@@ -34,17 +58,26 @@ def _normalize_provider(raw: Any) -> dict[str, Any] | None:
         "priority": int(raw.get("priority") or 100),
         "base_url": base_url,
         "auth": dict(auth or {}),
-    }
+    }, None
 
 
-def _normalize_player(raw: Any) -> dict[str, Any] | None:
+def _normalize_player(raw: Any) -> tuple[dict[str, Any] | None, str | None]:
     if not isinstance(raw, dict):
-        return None
+        return None, "player must be a mapping"
     player_id = str(raw.get("id") or "").strip()
     remote = str(raw.get("remote") or "").strip()
     adb_player = str(raw.get("adb_player") or "").strip()
-    if not player_id or not remote or not adb_player:
-        return None
+    missing = [
+        key
+        for key, value in (
+            ("id", player_id),
+            ("remote", remote),
+            ("adb_player", adb_player),
+        )
+        if not value
+    ]
+    if missing:
+        return None, f"missing {', '.join(missing)}"
     return {
         "id": player_id,
         "name": str(raw.get("name") or player_id).strip(),
@@ -52,27 +85,34 @@ def _normalize_player(raw: Any) -> dict[str, Any] | None:
         "media_player": str(raw.get("media_player") or "").strip(),
         "remote": remote,
         "adb_player": adb_player,
-    }
+    }, None
 
 
 def normalize_config(raw: Any) -> dict[str, Any]:
     data = raw if isinstance(raw, dict) else {}
+    issues: list[str] = []
+
     providers = []
-    for item in data.get(CONF_PROVIDERS) or []:
-        provider = _normalize_provider(item)
+    for label, item in _section_items(data.get(CONF_PROVIDERS) or []):
+        provider, issue = _normalize_provider(item)
         if provider:
             providers.append(provider)
+        elif issue:
+            issues.append(f"providers.{label}: {issue}")
 
     players = []
-    for item in data.get(CONF_PLAYERS) or []:
-        player = _normalize_player(item)
+    for label, item in _section_items(data.get(CONF_PLAYERS) or []):
+        player, issue = _normalize_player(item)
         if player:
             players.append(player)
+        elif issue:
+            issues.append(f"players.{label}: {issue}")
 
     return {
         "version": int(data.get("version") or 1),
         CONF_PROVIDERS: providers,
         CONF_PLAYERS: players,
+        "_issues": issues,
     }
 
 
