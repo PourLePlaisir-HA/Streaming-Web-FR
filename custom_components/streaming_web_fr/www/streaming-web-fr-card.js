@@ -3,6 +3,7 @@ const SWFR_DEFAULTS = {
   searchbox: true,
   posters_par_lot: 8,
   scroll_infini: false,
+  debug: false,
 };
 
 class StreamingWebFrCard extends HTMLElement {
@@ -35,6 +36,7 @@ class StreamingWebFrCard extends HTMLElement {
     this._config.posters_par_lot = Number.isFinite(batch) && batch > 0 ? Math.floor(batch) : 8;
     this._config.searchbox = this._config.searchbox !== false;
     this._config.scroll_infini = this._config.scroll_infini === true;
+    this._config.debug = this._config.debug === true;
     this._visible = this._config.posters_par_lot;
     this._render();
   }
@@ -54,6 +56,7 @@ class StreamingWebFrCard extends HTMLElement {
       searchbox: true,
       posters_par_lot: 8,
       scroll_infini: false,
+      debug: false,
     };
   }
 
@@ -109,6 +112,19 @@ class StreamingWebFrCard extends HTMLElement {
       this._render();
       this._restoreFocus(focus2);
     }
+  }
+
+  async _syncRuntime() {
+    if (!this._hass) return;
+    const runtime = await this._hass.callWS({ type: "streaming_web_fr/runtime" });
+    this._data = {
+      ...(this._data || {}),
+      providers: runtime.providers || [],
+      players: runtime.players || [],
+      config_source: runtime.config_source,
+      config_path: runtime.config_path,
+      config_issues: runtime.config_issues || [],
+    };
   }
 
   _sortedItems() {
@@ -211,6 +227,8 @@ class StreamingWebFrCard extends HTMLElement {
         .head{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:12px}
         h1{font-size:20px;line-height:1.2;margin:0;font-weight:700}
         .count{font-size:12px;color:rgba(255,255,255,.6)}
+        .head-actions{display:flex;align-items:center;gap:8px}
+        .refresh{width:34px;height:34px;border:0;border-radius:999px;background:rgba(255,255,255,.07);color:#fff;display:grid;place-items:center;cursor:pointer}
         .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
         .search-wrap{position:relative;flex:1 1 240px;min-width:180px}
         .search{box-sizing:border-box;width:100%;height:40px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(255,255,255,.07);color:#fff;padding:0 38px 0 12px;outline:none}
@@ -257,6 +275,9 @@ class StreamingWebFrCard extends HTMLElement {
         .play small{color:#cfcfd5;margin-top:2px}
         .play-status,.hint{margin-top:10px;color:#bbb;font-size:12px}
         .sentinel{height:1px}
+        .debug{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;padding:9px 10px;border:1px dashed rgba(255,255,255,.18);border-radius:10px;font-size:11px;color:#bbb}
+        .debug strong{color:#fff}
+        .debug-issue{color:#ffb4ab}
         @media(max-width:600px){
           .wrap{padding:12px}
           .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 7px}
@@ -271,7 +292,12 @@ class StreamingWebFrCard extends HTMLElement {
         <div class="wrap">
           <div class="head">
             <h1>${this._esc(this._config.title)}</h1>
-            <span class="count">${items.length} titre${items.length > 1 ? "s" : ""}</span>
+            <div class="head-actions">
+              <span class="count">${items.length} titre${items.length > 1 ? "s" : ""}</span>
+              <button class="refresh" type="button" title="Rafraîchir" aria-label="Rafraîchir">
+                <ha-icon icon="mdi:refresh"></ha-icon>
+              </button>
+            </div>
           </div>
 
           <div class="toolbar">
@@ -297,6 +323,17 @@ class StreamingWebFrCard extends HTMLElement {
               </button>
             `).join("")}
           </div>
+
+          ${this._config.debug ? `
+            <div class="debug">
+              <strong>Debug</strong>
+              <span>source: ${this._esc(this._data?.config_source || "unknown")}</span>
+              <span>players: ${(this._data?.players || []).length}</span>
+              <span>ids: ${this._esc((this._data?.players || []).map((p) => p.id).join(", ") || "—")}</span>
+              <span>config: ${this._esc(this._data?.config_path || "—")}</span>
+              ${(this._data?.config_issues || []).map((issue) => `<span class="debug-issue">${this._esc(issue)}</span>`).join("")}
+            </div>
+          ` : ""}
 
           ${this._loading && !this._loaded ? `
             <div class="state"><ha-icon class="spin" icon="mdi:loading"></ha-icon>Chargement du catalogue…</div>
@@ -345,6 +382,11 @@ class StreamingWebFrCard extends HTMLElement {
         }, 280);
       });
     }
+
+    root.querySelector(".refresh")?.addEventListener("click", async () => {
+      this._loaded = false;
+      await this._load();
+    });
 
     const sort = root.querySelector(".sort");
     sort?.addEventListener("change", () => {
@@ -404,6 +446,7 @@ class StreamingWebFrCard extends HTMLElement {
     this._playStatus = "";
     this._render();
     try {
+      await this._syncRuntime();
       this._popup = await this._hass.callWS({
         type: "streaming_web_fr/details",
         provider_id: item.provider_id,
