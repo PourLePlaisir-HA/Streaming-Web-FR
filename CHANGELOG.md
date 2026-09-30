@@ -1,3 +1,13 @@
+## 0.9.0-beta.1
+
+- Added optional Lovelace setting `play_on_current_device: true`.
+- Adds a **Lire sur cet appareil** destination without requiring a YAML player entry.
+- Resolves the media stream through the existing Provider pipeline and plays it in an HTML5 video element inside the media popup.
+- Uses native inline video playback (`playsinline`), including native HLS support on compatible Apple devices such as iPhone and iPad.
+- Keeps Android TV / VLC destinations and playback unchanged.
+- Added **Lecture sur cet appareil** to the Lovelace visual editor.
+- The option defaults to `false` for backward compatibility.
+
 ## 0.8.1-beta.1
 
 - Fix SearchBox Enter handling: typing now remains a draft until Enter or the search action explicitly launches the Provider search.
