@@ -1,7 +1,7 @@
 # Streaming Web FR
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/PourLePlaisir-HA/Streaming-Web-FR/main/icon.svg" alt="Streaming Web FR" width="160">
+  <img src="https://raw.githubusercontent.com/PourLePlaisir-HA/Streaming-Web-FR/main/custom_components/streaming_web_fr/brand/icon.png" alt="Streaming Web FR" width="160">
 </p>
 
 <p align="center">
@@ -178,3 +178,21 @@ The project icon combines a geometric cloud, a discreet play symbol and streamin
 ## License
 
 MIT
+
+
+## Home section scrolling (0.7 beta)
+
+The home rails can use the historical horizontal layout or a bounded vertical layout.
+
+```yaml
+type: custom:streaming-web-fr-card
+scroll_direction: vertical
+poster_rows: 2
+home_section_count: 20
+posters_par_lot: 8
+```
+
+- `scroll_direction`: `horizontal` (default) or `vertical`.
+- `poster_rows`: visible rows in vertical mode; default `2`.
+- `home_section_count`: posters available in each home section.
+- `posters_par_lot`: catalog pagination increment used by “Voir N de plus”.
