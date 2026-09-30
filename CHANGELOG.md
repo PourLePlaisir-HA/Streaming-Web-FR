@@ -1,3 +1,11 @@
+## 0.7.0-beta.4
+
+- Fixed a regression introduced in beta.3 that could make the home/catalog parser return zero titles.
+- Aligned the quote-aware title/alt parser with its named `value` capture.
+- Preserves apostrophes inside titles such as `L'Affaire Zanetti`, `D'Artagnan` and `Ocean's Eleven`.
+- Includes the cumulative 0.7 beta changes: configurable vertical scrolling, `poster_rows` in YAML and Lovelace UI, automatic runtime version from `manifest.json`, and updated visual identity.
+- No intended changes to stream resolution or VLC playback.
+
 ## 0.7.0-beta.3
 
 - Fixed Provider title parsing when titles contain apostrophes, including cases such as `L'Affaire`, `D'Artagnan` and `Ocean's Eleven`.
