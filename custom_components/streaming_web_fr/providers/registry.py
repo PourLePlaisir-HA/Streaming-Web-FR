@@ -172,11 +172,12 @@ class ProviderManager:
         query: str,
         *,
         provider_id: str | None = None,
+        exact_naming: bool | None = None,
     ) -> list[MediaItem]:
         providers = [self.get(provider_id)] if provider_id else list(self._providers.values())
         providers.sort(key=lambda p: (p.priority, p.name.casefold()))
         batches = await asyncio.gather(
-            *(provider.search(query) for provider in providers),
+            *(provider.search(query, exact_naming=exact_naming) for provider in providers),
             return_exceptions=True,
         )
         items: list[MediaItem] = []
