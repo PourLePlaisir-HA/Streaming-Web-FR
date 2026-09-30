@@ -29,6 +29,10 @@ _M3U8_ABS_RE = re.compile(
     re.IGNORECASE,
 )
 _M3U8_REL_RE = re.compile(r'["\']([^"\']+\.m3u8(?:\?[^"\']*)?)["\']', re.IGNORECASE)
+_SYNOPSIS_RE = re.compile(
+    r'<div[^>]+(?:id=["\']film-synopsis-text["\']|class=["\'][^"\']*film-detail-synopsis[^"\']*["\'])[^>]*>(.*?)</div>',
+    re.IGNORECASE | re.DOTALL,
+)
 _META_DESC_RE = re.compile(
     r'<meta[^>]+(?:name|property)=["\'](?:description|og:description)["\'][^>]+content=["\']([^"\']+)["\']',
     re.IGNORECASE,
@@ -423,6 +427,7 @@ class DrabamProvider(StreamingProvider):
         year = int(year_match.group(1)) if year_match else None
         title = _YEAR_RE.sub("", title).strip(" -–—()") or title
 
+        synopsis = _SYNOPSIS_RE.search(source)
         desc = _META_DESC_RE.search(source)
         image = _OG_IMAGE_RE.search(source)
         if not image:
@@ -435,7 +440,11 @@ class DrabamProvider(StreamingProvider):
             title=title,
             year=year,
             poster=urljoin(final_url, image.group(1)) if image else None,
-            overview=_clean(desc.group(1)) if desc else None,
+            overview=(
+                _clean(synopsis.group(1))
+                if synopsis
+                else (_clean(desc.group(1)) if desc else None)
+            ),
             page_url=final_url,
             extra={
                 "player_url": urljoin(final_url, iframe.group(1)) if iframe else None,
