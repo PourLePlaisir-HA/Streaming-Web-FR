@@ -413,13 +413,14 @@ class StreamingWebFrCard extends HTMLElement {
         .spin{animation:swfr-spin 1s linear infinite}
         @keyframes swfr-spin{to{transform:rotate(360deg)}}
         .overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);display:grid;place-items:center;padding:16px;z-index:9999}
-        .modal{position:relative;width:min(760px,96vw);max-height:88vh;overflow:auto;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:linear-gradient(145deg,#18181f,#22222d);box-shadow:0 30px 80px rgba(0,0,0,.5);padding:18px}
+        .modal{box-sizing:border-box;position:relative;width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:linear-gradient(145deg,#18181f,#22222d);box-shadow:0 30px 80px rgba(0,0,0,.5);padding:18px;margin:auto}
         .loading-modal{width:auto;display:flex;align-items:center;gap:10px}
         .current-player{margin-top:12px}.current-player video{display:block;width:100%;max-height:55vh;background:#000;border-radius:12px}.current-player-label{margin-top:6px;font-size:12px;color:rgba(255,255,255,.68)}
         .close{position:absolute;right:10px;top:10px;border:0;border-radius:999px;background:rgba(0,0,0,.46);color:#fff;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;z-index:2}
         .modal-grid{display:grid;grid-template-columns:190px 1fr;gap:22px}
         .modal-poster{width:190px;aspect-ratio:2/3;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06)}
         .modal-poster.empty{display:grid;place-items:center}
+        @media(max-width:600px){.overlay{padding:16px}.modal{width:100%;max-width:calc(100vw - 32px)}.modal-grid{grid-template-columns:110px minmax(0,1fr);gap:16px}.modal-poster{width:110px}.modal-copy{min-width:0}.play{width:100%;box-sizing:border-box}}
         .modal-copy{padding:8px 6px 8px 0}
         .modal-copy h2{font-size:25px;margin:5px 0 3px}
         .modal-source{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:#aaa}
