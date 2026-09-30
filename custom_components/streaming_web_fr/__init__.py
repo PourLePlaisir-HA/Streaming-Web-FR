@@ -276,6 +276,7 @@ def _register_ws(hass):
             vol.Optional("entry_id"): str,
             vol.Optional("provider_id"): str,
             vol.Required("query"): str,
+            vol.Optional("exact_naming"): bool,
         }
     )
     @websocket_api.async_response
@@ -290,9 +291,11 @@ def _register_ws(hass):
             return
         try:
             selected_provider_id = msg.get("provider_id") or None
+            lovelace_override = msg.get("exact_naming") if "exact_naming" in msg else None
             items = await data["manager"].search(
                 query,
                 provider_id=selected_provider_id,
+                exact_naming=lovelace_override,
             )
             providers = (
                 [data["manager"].get(selected_provider_id)]
@@ -300,7 +303,7 @@ def _register_ws(hass):
                 else list(data["manager"]._providers.values())
             )
             effective_queries = {
-                provider.id: provider.search_query(query)
+                provider.id: provider.search_query(query, exact_naming=lovelace_override)
                 for provider in providers
             }
             connection.send_result(
@@ -319,6 +322,15 @@ def _register_ws(hass):
                     "search_mode": "provider_native",
                     "query": query,
                     "query_sent": effective_queries,
+                    "exact_naming": {
+                        provider.id: (
+                            bool(lovelace_override)
+                            if lovelace_override is not None
+                            else bool(provider.config.get("exact_naming", True))
+                        )
+                        for provider in providers
+                    },
+                    "exact_naming_source": "lovelace" if lovelace_override is not None else "provider",
                 },
             )
         except Exception as err:
