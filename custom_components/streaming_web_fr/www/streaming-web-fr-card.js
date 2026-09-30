@@ -412,7 +412,7 @@ class StreamingWebFrCard extends HTMLElement {
         .error{color:#ffb4ab}
         .spin{animation:swfr-spin 1s linear infinite}
         @keyframes swfr-spin{to{transform:rotate(360deg)}}
-        .overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);display:grid;place-items:center;padding:16px;z-index:9999}
+        .overlay{box-sizing:border-box;position:fixed;inset:0;width:100%;height:100%;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9999;overflow:hidden}
         .modal{box-sizing:border-box;position:relative;width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:linear-gradient(145deg,#18181f,#22222d);box-shadow:0 30px 80px rgba(0,0,0,.5);padding:18px;margin:auto}
         .loading-modal{width:auto;display:flex;align-items:center;gap:10px}
         .current-player{margin-top:12px}.current-player video{display:block;width:100%;max-height:55vh;background:#000;border-radius:12px}.current-player-label{margin-top:6px;font-size:12px;color:rgba(255,255,255,.68)}
@@ -420,7 +420,7 @@ class StreamingWebFrCard extends HTMLElement {
         .modal-grid{display:grid;grid-template-columns:190px 1fr;gap:22px}
         .modal-poster{width:190px;aspect-ratio:2/3;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06)}
         .modal-poster.empty{display:grid;place-items:center}
-        @media(max-width:600px){.overlay{padding:16px}.modal{width:100%;max-width:calc(100vw - 32px)}.modal-grid{grid-template-columns:110px minmax(0,1fr);gap:16px}.modal-poster{width:110px}.modal-copy{min-width:0}.play{width:100%;box-sizing:border-box}}
+        @media(max-width:600px){.overlay{padding:12px}.modal{width:calc(100% - 24px);max-width:calc(100% - 24px);max-height:calc(100% - 24px);margin:0;overflow-x:hidden}.modal-grid{grid-template-columns:105px minmax(0,1fr);gap:14px;min-width:0}.modal-poster{width:105px;max-width:100%}.modal-copy{min-width:0;overflow:hidden}.play-list{min-width:0}.play{width:100%;max-width:100%;min-width:0;box-sizing:border-box}.play span{min-width:0}.play strong,.play small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.current-player,.current-player video{max-width:100%;box-sizing:border-box}}
         .modal-copy{padding:8px 6px 8px 0}
         .modal-copy h2{font-size:25px;margin:5px 0 3px}
         .modal-source{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:#aaa}
