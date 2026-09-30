@@ -22,7 +22,7 @@ The v0.6.0 release is the current validated stable baseline. It introduces the p
 - provider priority and enable/disable state;
 - pluggable provider architecture;
 - generic authentication modes: none, Basic, form login, API key, Bearer token, cookie and custom headers;
-- first provider module: Drabam;
+- first provider module: Provider;
 - normalized catalog model shared by all providers;
 - provider aggregation;
 - HLS resolver foundation;
@@ -43,7 +43,7 @@ The v0.6.0 release is the current validated stable baseline. It introduces the p
 - source URL / referer preservation for media details and playback;
 - expanded `debug: true` diagnostics;
 - refreshed Lovelace visual design;
-- improved provider badges, including the dedicated DRABAM text styling;
+- improved provider badges, including the dedicated Provider text styling;
 - updated Streaming Web FR project and Home Assistant integration icon.
 
 ## Installation
@@ -100,7 +100,7 @@ version: 1
 providers:
   - id: provider_main
     name: Provider principal
-    type: drabam
+    type: Provider
     enabled: true
     priority: 100
     base_url: https://example.com/access-prefix
@@ -139,7 +139,7 @@ The provider layer is modular. Each provider can define its own:
 - enabled/disabled state;
 - authentication mode.
 
-The first implemented provider type is `drabam`. Additional provider modules can be added without changing the Lovelace card or Android TV playback engine.
+The first implemented provider type is `Provider`. Additional provider modules can be added without changing the Lovelace card or Android TV playback engine.
 
 ## Android TV / VLC
 
