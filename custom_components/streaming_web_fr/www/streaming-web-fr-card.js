@@ -331,7 +331,7 @@ class StreamingWebFrCard extends HTMLElement {
             ${poster}
             <div class="modal-copy">
               <div class="modal-source">${this._esc(this._providerName(item.provider_id))}</div>
-              <h2>${this._esc(item.title || "")}</h2>
+              ${item.title && !/^Provider\s+\d+$/i.test(item.title) ? `<h2>${this._esc(item.title)}</h2>` : ""}
               ${item.year ? `<div class="modal-year">${this._esc(item.year)}</div>` : ""}
               <p>${this._esc(item.overview || "Aucun synopsis disponible.")}</p>
 
