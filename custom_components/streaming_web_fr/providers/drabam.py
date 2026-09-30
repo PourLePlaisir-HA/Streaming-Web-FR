@@ -257,10 +257,27 @@ class DrabamProvider(StreamingProvider):
             )
         return out
 
+    def _search_query(self, query: str) -> str:
+        """Apply optional Provider-specific compatibility normalization."""
+        query = str(query or "").strip()
+        if bool(self.config.get("exact_naming", True)):
+            return query
+        # Remove only a leading French elision; preserve apostrophes elsewhere.
+        return re.sub(
+            r"^(?:l|d|j|m|n|s|t|c|qu)[’']\\s*",
+            "",
+            query,
+            count=1,
+            flags=re.IGNORECASE,
+        ).strip()
+
     async def search(self, query: str) -> list[MediaItem]:
         """Use the Provider's native search form."""
         query = str(query or "").strip()
         if len(query) < 2:
+            return []
+        provider_query = self._search_query(query)
+        if len(provider_query) < 2:
             return []
         search_url = self._home_url()
         # Prime the Provider session exactly like a browser visit before the
@@ -271,7 +288,7 @@ class DrabamProvider(StreamingProvider):
             raise ProviderError(f"Provider search bootstrap HTTP {primed_status}")
         source, final_url, status, _ = await self._post_form_text(
             primed_url,
-            {"searchword": query},
+            {"searchword": provider_query},
             referer=primed_url,
         )
         if status >= 400:
