@@ -1,3 +1,11 @@
+## 0.7.0-beta.1
+
+- Added configurable home-section layout with `scroll_direction: horizontal|vertical`.
+- Added responsive vertical poster grids for home rails.
+- Added a Lovelace visual editor selector for **Défilement des sections**.
+- Kept `horizontal` as the default for backward compatibility.
+- Kept catalog pagination, infinite scroll, provider handling and VLC playback unchanged.
+
 ## 0.6.1
 
 - Updated public-facing documentation to use the generic **Provider** wording.
