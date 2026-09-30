@@ -1,3 +1,12 @@
+## 0.8.0-beta.1
+
+- Added the first backend implementation of native Provider search.
+- Search requests use the Provider's own search form through the configured session and cookie context.
+- Added a Home Assistant `streaming_web_fr.search_test` action for diagnostic validation before wiring the Lovelace SearchBox.
+- Search results are parsed into the existing `MediaItem` model, preserving the normal details/playback pipeline.
+- Minimum search query length is 2 characters.
+- SearchBox restoration and its Lovelace UI toggle are intentionally planned for beta.2.
+
 ## 0.7.0
 
 - Promoted the validated 0.7 beta cycle to stable.
