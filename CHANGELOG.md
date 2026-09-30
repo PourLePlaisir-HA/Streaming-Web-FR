@@ -1,3 +1,10 @@
+## 0.8.1-beta.1
+
+- Fix SearchBox Enter handling: typing now remains a draft until Enter or the search action explicitly launches the Provider search.
+- Allow Enter/search action to relaunch the current query instead of being blocked by the previous search signature.
+- Remove the browser-native clear control from the search field so only the Streaming Web FR clear button is displayed.
+- Clearing the search or returning Home resets both the active query and the draft input.
+
 ## 0.8.0-beta.10
 
 - Search results now inherit the card's global poster layout instead of using a dedicated unrestricted grid.
