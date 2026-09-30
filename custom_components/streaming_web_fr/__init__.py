@@ -289,10 +289,20 @@ def _register_ws(hass):
             connection.send_error(msg["id"], "invalid_query", "La recherche doit contenir au moins 2 caractères")
             return
         try:
+            selected_provider_id = msg.get("provider_id") or None
             items = await data["manager"].search(
                 query,
-                provider_id=msg.get("provider_id") or None,
+                provider_id=selected_provider_id,
             )
+            providers = (
+                [data["manager"].get(selected_provider_id)]
+                if selected_provider_id
+                else list(data["manager"]._providers.values())
+            )
+            effective_queries = {
+                provider.id: provider.search_query(query)
+                for provider in providers
+            }
             connection.send_result(
                 msg["id"],
                 {
@@ -308,6 +318,7 @@ def _register_ws(hass):
                     "page": 1,
                     "search_mode": "provider_native",
                     "query": query,
+                    "query_sent": effective_queries,
                 },
             )
         except Exception as err:
