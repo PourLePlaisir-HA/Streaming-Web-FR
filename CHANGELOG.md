@@ -1,3 +1,10 @@
+## 0.8.0-beta.9
+
+- Lovelace `exact_naming` now overrides the Provider setting for searches launched from that card.
+- Search precedence is Lovelace override, then Provider configuration, then the default `true`.
+- Debug now exposes the effective `exact_naming` value, its source, the original query and the query sent to each Provider.
+- Keeps the standalone search-results view, empty-result state and Home return flow from beta.8.
+
 ## 0.8.0-beta.8
 
 - Search results now replace the home/catalog content instead of mixing with filters and sections.
