@@ -1,10 +1,14 @@
-## 0.7.0-beta.1
+## 0.7.0-beta.2
 
-- Added configurable home-section layout with `scroll_direction: horizontal|vertical`.
-- Added responsive vertical poster grids for home rails.
-- Added a Lovelace visual editor selector for **Défilement des sections**.
-- Kept `horizontal` as the default for backward compatibility.
-- Kept catalog pagination, infinite scroll, provider handling and VLC playback unchanged.
+- Added the validated Streaming Web FR visual identity assets.
+- Added configurable home-section direction with `scroll_direction: horizontal|vertical`.
+- Added true bounded vertical scrolling for home sections instead of displaying every poster at once.
+- Added `poster_rows` to configure the number of visible poster rows in vertical mode; default: `2`.
+- Added Lovelace visual editor controls for scroll direction and visible poster rows.
+- Kept `home_section_count` as the number of posters available in each home section.
+- Kept `posters_par_lot` dedicated to catalog pagination / “Voir N de plus”.
+- Kept `horizontal` as the default layout for backward compatibility.
+- Provider handling, details, stream resolution and VLC playback are unchanged.
 
 ## 0.6.1
 
