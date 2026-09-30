@@ -383,7 +383,7 @@ class StreamingWebFrCard extends HTMLElement {
         .source.provider-drabam{color:#e5b52a;font-family:"Arial Black",Impact,Arial,sans-serif;font-weight:900;letter-spacing:.3px;text-transform:uppercase;text-shadow:0 1px 1px rgba(0,0,0,.35)}
         .year{right:6px}
         .poster-title{font-size:12px;font-weight:600;line-height:1.25;margin:7px 3px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-        .more{display:flex;justify-content:center;margin-top:18px}
+        .search-results-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 12px}.search-results-head span{font-size:12px;color:var(--secondary-text-color,#666)}\n        .more{display:flex;justify-content:center;margin-top:18px}
         .more button{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;padding:9px 18px;cursor:pointer}
         .state{display:flex;align-items:center;justify-content:center;gap:8px;min-height:160px;color:rgba(255,255,255,.7)}
         .error{color:#ffb4ab}
@@ -449,7 +449,7 @@ class StreamingWebFrCard extends HTMLElement {
               <span>page: ${this._esc(this._data?.page ?? 0)}</span>
               <span>has_more: ${hasRemoteMore}</span>
               <span>cursor: ${this._esc(this._data?.next_cursor || "—")}</span>
-              <span>search: ${this._esc(this._data?.search_mode || "—")}</span>
+              <span>search: ${this._esc(this._data?.search_mode || "—")}</span>\n              <span>query: ${this._esc(this._data?.query || "—")}</span>\n              <span>query_sent: ${this._esc(this._data?.query_sent ? JSON.stringify(this._data.query_sent) : "—")}</span>
               <span>players: ${(this._data?.players || []).length}</span>
               <span>ids: ${this._esc((this._data?.players || []).map((p) => p.id).join(", ") || "—")}</span>
               <span>config: ${this._esc(this._data?.config_path || "—")}</span>
@@ -471,7 +471,12 @@ class StreamingWebFrCard extends HTMLElement {
             <div class="state"><ha-icon class="spin" icon="mdi:loading"></ha-icon>Chargement du catalogue…</div>
           ` : this._error ? `
             <div class="state error"><ha-icon icon="mdi:alert-circle-outline"></ha-icon>${this._esc(this._error)}</div>
-          ` : !catalogMode && !searchResultsMode ? `
+          ` : searchResultsMode ? `
+            ${visible.length ? `
+              <div class="search-results-head"><strong>Résultats de recherche</strong><span>${items.length} résultat${items.length > 1 ? "s" : ""}</span></div>
+              <div class="grid">${visible.map((item) => this._poster(item)).join("")}</div>
+            ` : `<div class="state"><ha-icon icon="mdi:movie-search-outline"></ha-icon>Aucun résultat pour « ${this._esc(this._query)} ».</div>`}
+          ` : !catalogMode ? `
             ${homeSections || `<div class="state"><ha-icon icon="mdi:movie-search-outline"></ha-icon>Aucune section détectée sur la page d'accueil.</div>`}
             <div class="explore">
               <button type="button" data-open-category="all"><ha-icon icon="mdi:view-grid-outline"></ha-icon>Explorer le catalogue</button>
@@ -485,11 +490,6 @@ class StreamingWebFrCard extends HTMLElement {
             </div>
 
             <div class="toolbar">
-              ${this._config.searchbox ? `
-                <div class="search-wrap">
-                  <input class="search" type="search" value="${this._esc(this._query)}" placeholder="Rechercher un titre…">
-                  ${this._query ? '<button class="search-clear" type="button" aria-label="Effacer" data-search-clear><ha-icon icon="mdi:close"></ha-icon></button>' : '<button class="search-submit" type="button" aria-label="Rechercher" data-search-submit><ha-icon icon="mdi:magnify"></ha-icon></button>'}
-                </div>` : ""}
               <select class="sort" aria-label="Tri">
                 <option value="default" ${this._sort==="default"?"selected":""}>Ordre provider</option>
                 <option value="title" ${this._sort==="title"?"selected":""}>Titre A–Z</option>
