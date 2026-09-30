@@ -383,7 +383,7 @@ class StreamingWebFrCard extends HTMLElement {
         .source.provider-drabam{color:#e5b52a;font-family:"Arial Black",Impact,Arial,sans-serif;font-weight:900;letter-spacing:.3px;text-transform:uppercase;text-shadow:0 1px 1px rgba(0,0,0,.35)}
         .year{right:6px}
         .poster-title{font-size:12px;font-weight:600;line-height:1.25;margin:7px 3px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-        .search-results-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 12px}.search-results-head span{font-size:12px;color:var(--secondary-text-color,#666)}\n        .more{display:flex;justify-content:center;margin-top:18px}
+        .search-results-head{display:flex;align-items:center;gap:10px;margin:4px 0 12px}.search-results-head strong{flex:1}.search-home{display:inline-flex;align-items:center;gap:5px;border:0;border-radius:999px;padding:7px 11px;background:var(--secondary-background-color,#eee);color:var(--primary-text-color,#222);cursor:pointer}.search-home ha-icon{--mdc-icon-size:18px}.search-results-head span{font-size:12px;color:var(--secondary-text-color,#666)}\n        .more{display:flex;justify-content:center;margin-top:18px}
         .more button{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;padding:9px 18px;cursor:pointer}
         .state{display:flex;align-items:center;justify-content:center;gap:8px;min-height:160px;color:rgba(255,255,255,.7)}
         .error{color:#ffb4ab}
@@ -473,7 +473,7 @@ class StreamingWebFrCard extends HTMLElement {
             <div class="state error"><ha-icon icon="mdi:alert-circle-outline"></ha-icon>${this._esc(this._error)}</div>
           ` : searchResultsMode ? `
             ${visible.length ? `
-              <div class="search-results-head"><strong>Résultats de recherche</strong><span>${items.length} résultat${items.length > 1 ? "s" : ""}</span></div>
+              <div class="search-results-head"><button class="search-home" type="button" data-search-home><ha-icon icon="mdi:home-outline"></ha-icon>Accueil</button><strong>Résultats de recherche</strong><span>${items.length} résultat${items.length > 1 ? "s" : ""}</span></div>
               <div class="grid">${visible.map((item) => this._poster(item)).join("")}</div>
             ` : `<div class="state"><ha-icon icon="mdi:movie-search-outline"></ha-icon>Aucun résultat pour « ${this._esc(this._query)} ».</div>`}
           ` : !catalogMode ? `
@@ -598,6 +598,14 @@ class StreamingWebFrCard extends HTMLElement {
         this._load();
       });
     }
+
+    root.querySelector("[data-search-home]")?.addEventListener("click", () => {
+      this._query = "";
+      this._lastSearchQuery = null;
+      this._loaded = false;
+      this._view = "home";
+      this._load();
+    });
 
     root.querySelector(".refresh")?.addEventListener("click", async () => {
       this._loaded = false;
