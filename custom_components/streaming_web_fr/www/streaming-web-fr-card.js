@@ -26,6 +26,7 @@ class StreamingWebFrCard extends HTMLElement {
     this._catalogCategory = "all";
     this._visible = SWFR_DEFAULTS.posters_par_lot;
     this._searchTimer = null;
+    this._lastSearchQuery = null;
     this._popup = null;
     this._popupLoading = false;
     this._playStatus = "";
@@ -146,6 +147,30 @@ class StreamingWebFrCard extends HTMLElement {
       this._loading = false;
       this._render();
       this._restoreFocus(focus2);
+    }
+  }
+
+  async _runSearch() {
+    if (!this._hass || this._loading) return;
+    const query = String(this._query || "").trim();
+    if (query.length < 2) return;
+    const signature = `${this._provider}|${query}`;
+    if (signature === this._lastSearchQuery) return;
+    this._lastSearchQuery = signature;
+    this._loading = true;
+    this._error = null;
+    this._render();
+    try {
+      const msg = { type: "streaming_web_fr/search", query };
+      if (this._provider) msg.provider_id = this._provider;
+      this._data = await this._hass.callWS(msg);
+      this._loaded = true;
+      this._visible = this._config.posters_par_lot;
+    } catch (err) {
+      this._error = String(err?.message || err);
+    } finally {
+      this._loading = false;
+      this._render();
     }
   }
 
@@ -337,7 +362,7 @@ class StreamingWebFrCard extends HTMLElement {
         .search-wrap{position:relative;flex:1 1 240px;min-width:180px}
         .search{box-sizing:border-box;width:100%;height:40px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:var(--secondary-background-color,#ededed);color:var(--primary-text-color,#111);padding:0 38px 0 12px;outline:none}
         .search:focus{border-color:rgba(255,255,255,.4);box-shadow:0 0 0 2px rgba(255,255,255,.08)}
-        .search-icon{position:absolute;right:10px;top:9px;color:rgba(255,255,255,.55)}
+        .search-icon{position:absolute;right:10px;top:9px;color:rgba(255,255,255,.55)}\n        .search-submit,.search-clear{position:absolute;right:5px;top:4px;width:32px;height:32px;border:0;border-radius:999px;background:transparent;color:var(--secondary-text-color,#666);display:grid;place-items:center;cursor:pointer}.search-submit ha-icon,.search-clear ha-icon{--mdc-icon-size:20px}
         select{height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:#fff;padding:0 10px}
         .providers,.categories{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
         .providers::-webkit-scrollbar,.categories::-webkit-scrollbar{display:none}
@@ -450,7 +475,7 @@ class StreamingWebFrCard extends HTMLElement {
               ${this._config.searchbox ? `
                 <div class="search-wrap">
                   <input class="search" type="search" value="${this._esc(this._query)}" placeholder="Rechercher un titre…">
-                  <ha-icon class="search-icon" icon="mdi:magnify"></ha-icon>
+                  ${this._query ? '<button class="search-clear" type="button" aria-label="Effacer" data-search-clear><ha-icon icon="mdi:close"></ha-icon></button>' : '<button class="search-submit" type="button" aria-label="Rechercher" data-search-submit><ha-icon icon="mdi:magnify"></ha-icon></button>'}
                 </div>` : ""}
               <select class="sort" aria-label="Tri">
                 <option value="default" ${this._sort==="default"?"selected":""}>Ordre provider</option>
@@ -535,17 +560,29 @@ class StreamingWebFrCard extends HTMLElement {
     const search = root.querySelector(".search");
     if (search) {
       const block = (event) => event.stopPropagation();
-      search.addEventListener("keydown", block);
+      search.addEventListener("keydown", (event) => {
+        event.stopPropagation();
+        if (event.key === "Enter") {
+          event.preventDefault();
+          this._query = event.target.value;
+          this._runSearch();
+        }
+      });
       search.addEventListener("keyup", block);
       search.addEventListener("keypress", block);
       search.addEventListener("input", (event) => {
         event.stopPropagation();
         this._query = event.target.value;
-        clearTimeout(this._searchTimer);
-        this._searchTimer = setTimeout(() => {
-          this._visible = this._config.posters_par_lot;
-          this._load();
-        }, 280);
+      });
+      root.querySelector("[data-search-submit]")?.addEventListener("click", () => {
+        this._query = search.value;
+        this._runSearch();
+      });
+      root.querySelector("[data-search-clear]")?.addEventListener("click", () => {
+        this._query = "";
+        this._lastSearchQuery = null;
+        this._loaded = false;
+        this._load();
       });
     }
 
