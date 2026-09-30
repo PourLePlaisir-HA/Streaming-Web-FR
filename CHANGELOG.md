@@ -1,3 +1,12 @@
+## 0.8.0-beta.8
+
+- Search results now replace the home/catalog content instead of mixing with filters and sections.
+- Removed the duplicate SearchBox from the legacy catalog toolbar.
+- Added a clear empty state when native Provider search returns no result.
+- Added an explicit Home button from search results; clearing the SearchBox also returns home.
+- Debug now displays the original search query and the effective query sent to each Provider.
+- Fixed leading French elision normalization used by `exact_naming: false`.
+
 ## 0.8.0-beta.7
 
 - Corrected the SearchBox insertion point in the main Lovelace render.
