@@ -1,3 +1,10 @@
+## 0.8.0-beta.5
+
+- Moved the SearchBox to the main Lovelace home view.
+- Native Provider search can now be launched directly from the current Streaming Web card without opening the catalog view.
+- Search results continue to use the validated Provider search backend and per-Provider `exact_naming` behavior.
+- Clearing the SearchBox returns to the normal home sections.
+
 ## 0.8.0-beta.4
 
 - Restored the Lovelace SearchBox and connected it to the validated native Provider search backend.
