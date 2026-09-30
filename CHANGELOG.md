@@ -1,3 +1,12 @@
+## 0.9.0-beta.3
+
+- Includes all current-device playback and mobile popup fixes from beta.2.
+- Added synopsis extraction from the Provider media detail page using `#film-synopsis-text` / `.film-detail-synopsis`.
+- Keeps metadata description as a fallback when the dedicated synopsis block is unavailable.
+- Hides technical fallback titles such as `Provider <id>` from the user-facing media popup.
+- Technical provider identifiers remain available in the debug block when `debug: true`.
+- Android TV / VLC and current-device playback remain unchanged.
+
 ## 0.9.0-beta.2
 
 - Includes the validated optional current-device playback introduced in beta.1.
