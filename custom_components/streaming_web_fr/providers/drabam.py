@@ -264,7 +264,7 @@ class DrabamProvider(StreamingProvider):
             return query
         # Remove only a leading French elision; preserve apostrophes elsewhere.
         return re.sub(
-            r"^(?:l|d|j|m|n|s|t|c|qu)[’']\\s*",
+            r"^(?:l|d|j|m|n|s|t|c|qu)[’']\s*",
             "",
             query,
             count=1,
