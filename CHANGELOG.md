@@ -1,3 +1,12 @@
+## 0.7.0-beta.3
+
+- Fixed Provider title parsing when titles contain apostrophes, including cases such as `L'Affaire`, `D'Artagnan` and `Ocean's Eleven`.
+- The parser now closes quoted HTML attributes only with the same quote character that opened them.
+- Fixed the Lovelace visual editor so `poster_rows` is actually configurable from the UI.
+- Runtime/debug version is now read automatically from `manifest.json` instead of being hardcoded.
+- Includes the configurable vertical home scrolling, bounded poster rows and visual identity changes from the 0.7.0 beta cycle.
+- No intended changes to Provider playback, stream resolution or VLC launching.
+
 ## 0.7.0-beta.2
 
 - Added the validated Streaming Web FR visual identity assets.
