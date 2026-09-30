@@ -257,6 +257,21 @@ class DrabamProvider(StreamingProvider):
             )
         return out
 
+    async def search(self, query: str) -> list[MediaItem]:
+        """Use the Provider's native search form."""
+        query = str(query or "").strip()
+        if len(query) < 2:
+            return []
+        search_url = self._home_url()
+        source, final_url, status, _ = await self._post_form_text(
+            search_url,
+            {"searchword": query},
+            referer=search_url,
+        )
+        if status >= 400:
+            raise ProviderError(f"Provider search HTTP {status}")
+        return self._extract_items(source, final_url)
+
     async def browse(self, *, category: str | None = None) -> list[MediaItem]:
         source, final_url, status, _ = await self._get_text(self._home_url())
         if status >= 400:
