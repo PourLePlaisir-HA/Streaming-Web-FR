@@ -40,10 +40,10 @@
 
 ## 0.6.0-beta.1
 
-- Added a Drabam-style Lovelace home view with **Derniers ajouts**, **À l'affiche**, **Animations** and **Docs & Spectacles** rails.
+- Added a Provider-style Lovelace home view with **Derniers ajouts**, **À l'affiche**, **Animations** and **Docs & Spectacles** rails.
 - Added **Voir tout** navigation for each home section.
 - Added **Explorer le catalogue** and a dedicated catalog view with section filters, search, sorting, provider filter, pagination and optional infinite scroll.
-- Extended the Drabam parser to detect home sections and follow the provider's **Tout** catalog link.
+- Extended the Provider parser to detect home sections and follow the provider's **Tout** catalog link.
 - Kept Android TV / VLC playback and the existing details popup unchanged.
 - Kept user-state features out of this project: no **Ma liste**, **Vu** or **Pas encore vu** UI.
 - Added `home_section_count` (default: `10`) for the number of posters displayed per home rail.
@@ -70,7 +70,7 @@ First stable release.
 - Uses `/config/streaming_web_fr.yaml` as the canonical configuration source when present.
 - Supports unlimited providers and Android TV destinations.
 - Includes extensible provider authentication modes.
-- Includes the Drabam provider foundation.
+- Includes the Provider provider foundation.
 - Includes Android TV / VLC playback via Android Debug Bridge.
 - Adds `streaming_web_fr.reload_config` for YAML reload without Home Assistant restart.
 - Includes responsive Lovelace browsing, search, filtering, sorting, pagination and optional infinite scroll.
@@ -119,7 +119,7 @@ Initial architecture beta.
 
 - New independent Home Assistant integration: `streaming_web_fr`.
 - Unlimited provider list stored in the Config Entry.
-- First provider implementation: Drabam.
+- First provider implementation: Provider.
 - Generic authentication layer: none, Basic, form login, API key, Bearer, cookie and custom headers.
 - Generic provider interface for browse, search, details and stream resolution.
 - HLS manifest resolver foundation.
