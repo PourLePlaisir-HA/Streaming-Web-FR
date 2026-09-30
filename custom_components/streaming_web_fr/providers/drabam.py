@@ -217,7 +217,7 @@ class DrabamProvider(StreamingProvider):
             title_match = _TITLE_ATTR_RE.search(body)
             title = _clean(title_match.group(1) if title_match else body)
             if not title:
-                title = f"Drabam {item_id}"
+                title = f"Provider {item_id}"
 
             year_match = _YEAR_RE.search(title)
             year = int(year_match.group(1)) if year_match else None
@@ -257,7 +257,7 @@ class DrabamProvider(StreamingProvider):
     async def browse(self, *, category: str | None = None) -> list[MediaItem]:
         source, final_url, status, _ = await self._get_text(self._home_url())
         if status >= 400:
-            raise ProviderError(f"Drabam HTTP {status}")
+            raise ProviderError(f"Provider HTTP {status}")
 
         home_items = self._extract_items(source, final_url)
         wanted = str(category or "").strip().casefold()
@@ -376,7 +376,7 @@ class DrabamProvider(StreamingProvider):
             raise ProviderError(f"Provider fiche HTTP {status}")
 
         h1 = _H1_RE.search(source)
-        title = _clean(h1.group(1)) if h1 else f"Drabam {provider_item_id}"
+        title = _clean(h1.group(1)) if h1 else f"Provider {provider_item_id}"
         year_match = _YEAR_RE.search(title)
         year = int(year_match.group(1)) if year_match else None
         title = _YEAR_RE.sub("", title).strip(" -–—()") or title
