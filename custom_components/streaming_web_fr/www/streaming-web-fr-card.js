@@ -692,6 +692,11 @@ class StreamingWebFrCardEditor extends HTMLElement {
         </select>
         <div class="hint">Définit l'affichage des posters sur la page d'accueil.</div>
       </div>
+      <div class="field poster-rows-field" style="margin-top:14px;${direction === "vertical" ? "" : "opacity:.55"}">
+        <label for="poster-rows">Nombre de lignes de posters</label>
+        <input id="poster-rows" type="number" min="1" step="1" value="${rows}" ${direction === "vertical" ? "" : "disabled"}>
+        <div class="hint">Nombre de lignes visibles en mode vertical. Valeur par défaut : 2.</div>
+      </div>
     `;
     this.shadowRoot.querySelector("#scroll-direction")?.addEventListener("change", (event) => {
       const config = { ...this._config, scroll_direction: event.target.value };
