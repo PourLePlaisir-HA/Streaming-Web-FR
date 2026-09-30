@@ -257,10 +257,11 @@ class DrabamProvider(StreamingProvider):
             )
         return out
 
-    def search_query(self, query: str) -> str:
+    def search_query(self, query: str, *, exact_naming: bool | None = None) -> str:
         """Apply optional Provider-specific compatibility normalization."""
         query = str(query or "").strip()
-        if bool(self.config.get("exact_naming", True)):
+        effective_exact = bool(self.config.get("exact_naming", True)) if exact_naming is None else bool(exact_naming)
+        if effective_exact:
             return query
         # Remove only a leading French elision; preserve apostrophes elsewhere.
         return re.sub(
@@ -271,12 +272,12 @@ class DrabamProvider(StreamingProvider):
             flags=re.IGNORECASE,
         ).strip()
 
-    async def search(self, query: str) -> list[MediaItem]:
+    async def search(self, query: str, *, exact_naming: bool | None = None) -> list[MediaItem]:
         """Use the Provider's native search form."""
         query = str(query or "").strip()
         if len(query) < 2:
             return []
-        provider_query = self.search_query(query)
+        provider_query = self.search_query(query, exact_naming=exact_naming)
         if len(provider_query) < 2:
             return []
         search_url = self._home_url()
