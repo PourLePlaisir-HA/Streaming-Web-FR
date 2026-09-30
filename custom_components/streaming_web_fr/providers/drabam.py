@@ -257,7 +257,7 @@ class DrabamProvider(StreamingProvider):
             )
         return out
 
-    def _search_query(self, query: str) -> str:
+    def search_query(self, query: str) -> str:
         """Apply optional Provider-specific compatibility normalization."""
         query = str(query or "").strip()
         if bool(self.config.get("exact_naming", True)):
@@ -276,7 +276,7 @@ class DrabamProvider(StreamingProvider):
         query = str(query or "").strip()
         if len(query) < 2:
             return []
-        provider_query = self._search_query(query)
+        provider_query = self.search_query(query)
         if len(provider_query) < 2:
             return []
         search_url = self._home_url()
