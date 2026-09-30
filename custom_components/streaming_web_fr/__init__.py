@@ -272,6 +272,49 @@ def _register_ws(hass):
 
     @websocket_api.websocket_command(
         {
+            vol.Required("type"): f"{DOMAIN}/search",
+            vol.Optional("entry_id"): str,
+            vol.Optional("provider_id"): str,
+            vol.Required("query"): str,
+        }
+    )
+    @websocket_api.async_response
+    async def search(hass, connection, msg):
+        data = _entry_data(hass, msg.get("entry_id"))
+        if not data:
+            connection.send_error(msg["id"], "not_loaded", "Streaming Web FR not loaded")
+            return
+        query = str(msg.get("query") or "").strip()
+        if len(query) < 2:
+            connection.send_error(msg["id"], "invalid_query", "La recherche doit contenir au moins 2 caractères")
+            return
+        try:
+            items = await data["manager"].search(
+                query,
+                provider_id=msg.get("provider_id") or None,
+            )
+            connection.send_result(
+                msg["id"],
+                {
+                    "providers": data["manager"].public_providers(),
+                    "players": _public_players(data["players"]),
+                    "items": [item.as_dict() for item in items],
+                    "config_source": data.get("config_source"),
+                    "config_path": data.get("config_path"),
+                    "config_issues": list(data.get("config_issues") or []),
+                    "version": VERSION,
+                    "has_more": False,
+                    "next_cursor": None,
+                    "page": 1,
+                    "search_mode": "provider_native",
+                    "query": query,
+                },
+            )
+        except Exception as err:
+            connection.send_error(msg["id"], "search_error", str(err))
+
+    @websocket_api.websocket_command(
+        {
             vol.Required("type"): f"{DOMAIN}/details",
             vol.Optional("entry_id"): str,
             vol.Required("provider_id"): str,
@@ -360,6 +403,7 @@ def _register_ws(hass):
 
     websocket_api.async_register_command(hass, runtime_info)
     websocket_api.async_register_command(hass, catalog)
+    websocket_api.async_register_command(hass, search)
     websocket_api.async_register_command(hass, details)
     websocket_api.async_register_command(hass, play)
     websocket_api.async_register_command(hass, resolve)
