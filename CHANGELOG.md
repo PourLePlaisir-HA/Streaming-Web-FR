@@ -1,3 +1,83 @@
+## 0.8.0-beta.10
+
+- Search results now inherit the card's global poster layout instead of using a dedicated unrestricted grid.
+- `scroll_direction` and `poster_rows` are preserved in search-result mode.
+- Vertical search results remain bounded to the configured number of visible poster rows and scroll inside the card.
+- Horizontal search results retain the global horizontal rail behavior.
+- Includes all validated native-search, standalone-results, debug and `exact_naming` precedence changes from beta.9.
+
+## 0.8.0-beta.9
+
+- Lovelace `exact_naming` now overrides the Provider setting for searches launched from that card.
+- Search precedence is Lovelace override, then Provider configuration, then the default `true`.
+- Debug now exposes the effective `exact_naming` value, its source, the original query and the query sent to each Provider.
+- Keeps the standalone search-results view, empty-result state and Home return flow from beta.8.
+
+## 0.8.0-beta.8
+
+- Search results now replace the home/catalog content instead of mixing with filters and sections.
+- Removed the duplicate SearchBox from the legacy catalog toolbar.
+- Added a clear empty state when native Provider search returns no result.
+- Added an explicit Home button from search results; clearing the SearchBox also returns home.
+- Debug now displays the original search query and the effective query sent to each Provider.
+- Fixed leading French elision normalization used by `exact_naming: false`.
+
+## 0.8.0-beta.7
+
+- Corrected the SearchBox insertion point in the main Lovelace render.
+- SearchBox is now rendered immediately below the debug block and above the first home section.
+- Removed accidental SearchBox template insertion from media popup rendering.
+- Keeps native Provider search and per-Provider `exact_naming` compatibility.
+
+## 0.8.0-beta.6
+
+- Fixed the SearchBox rendering on the main Lovelace home view.
+- The SearchBox is now explicitly displayed below the card header and before the home sections when `searchbox: true`.
+- Keeps native Provider search and per-Provider `exact_naming` behavior from the previous betas.
+
+## 0.8.0-beta.5
+
+- Moved the SearchBox to the main Lovelace home view.
+- Native Provider search can now be launched directly from the current Streaming Web card without opening the catalog view.
+- Search results continue to use the validated Provider search backend and per-Provider `exact_naming` behavior.
+- Clearing the SearchBox returns to the normal home sections.
+
+## 0.8.0-beta.4
+
+- Restored the Lovelace SearchBox and connected it to the validated native Provider search backend.
+- Added a dedicated WebSocket search command using each Provider's independent search implementation and configuration.
+- Search runs only on Enter or the search button, not on every keystroke.
+- Minimum query length remains 2 characters and duplicate validated searches are ignored.
+- Clearing the SearchBox restores the catalog view.
+- Provider-specific `exact_naming` normalization from beta.3 is automatically applied to SearchBox queries.
+- Search results reuse the existing poster, details and VLC playback flow.
+
+## 0.8.0-beta.3
+
+- Added per-Provider `exact_naming` search compatibility setting.
+- `exact_naming: true` is the default and sends the user query unchanged.
+- `exact_naming: false` removes only a recognized leading French elision before the native Provider search (for example `L'Affaire` → `Affaire`).
+- Added `exact_naming` to the Provider configuration UI.
+- Documented the compatibility behavior and per-Provider scope.
+- Keeps the validated native Provider search backend from beta.2.
+
+## 0.8.0-beta.2
+
+- Improved native Provider search request fidelity.
+- Prime the Provider session before submitting a search so cookies/context match normal browser navigation.
+- Submit search as an URL-encoded form with Origin and Referer headers.
+- Keep `streaming_web_fr.search_test` as the validation path for the backend search.
+- SearchBox and Lovelace visual-editor configuration are deferred to a later version.
+
+## 0.8.0-beta.1
+
+- Added the first backend implementation of native Provider search.
+- Search requests use the Provider's own search form through the configured session and cookie context.
+- Added a Home Assistant `streaming_web_fr.search_test` action for diagnostic validation before wiring the Lovelace SearchBox.
+- Search results are parsed into the existing `MediaItem` model, preserving the normal details/playback pipeline.
+- Minimum search query length is 2 characters.
+- SearchBox restoration and its Lovelace UI toggle are intentionally planned for beta.2.
+
 ## 0.7.0
 
 - Promoted the validated 0.7 beta cycle to stable.

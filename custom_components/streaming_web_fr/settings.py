@@ -56,6 +56,7 @@ def _normalize_provider(raw: Any) -> tuple[dict[str, Any] | None, str | None]:
         "type": provider_type,
         "enabled": bool(raw.get("enabled", True)),
         "priority": int(raw.get("priority") or 100),
+        "exact_naming": bool(raw.get("exact_naming", True)),
         "base_url": base_url,
         "auth": dict(auth or {}),
     }, None

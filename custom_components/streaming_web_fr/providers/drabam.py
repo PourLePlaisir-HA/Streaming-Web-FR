@@ -257,6 +257,45 @@ class DrabamProvider(StreamingProvider):
             )
         return out
 
+    def search_query(self, query: str, *, exact_naming: bool | None = None) -> str:
+        """Apply optional Provider-specific compatibility normalization."""
+        query = str(query or "").strip()
+        effective_exact = bool(self.config.get("exact_naming", True)) if exact_naming is None else bool(exact_naming)
+        if effective_exact:
+            return query
+        # Remove only a leading French elision; preserve apostrophes elsewhere.
+        return re.sub(
+            r"^(?:l|d|j|m|n|s|t|c|qu)[’']\s*",
+            "",
+            query,
+            count=1,
+            flags=re.IGNORECASE,
+        ).strip()
+
+    async def search(self, query: str, *, exact_naming: bool | None = None) -> list[MediaItem]:
+        """Use the Provider's native search form."""
+        query = str(query or "").strip()
+        if len(query) < 2:
+            return []
+        provider_query = self.search_query(query, exact_naming=exact_naming)
+        if len(provider_query) < 2:
+            return []
+        search_url = self._home_url()
+        # Prime the Provider session exactly like a browser visit before the
+        # form POST. Some Provider deployments bind search handling to cookies
+        # issued by the home document.
+        _, primed_url, primed_status, _ = await self._get_text(search_url)
+        if primed_status >= 400:
+            raise ProviderError(f"Provider search bootstrap HTTP {primed_status}")
+        source, final_url, status, _ = await self._post_form_text(
+            primed_url,
+            {"searchword": provider_query},
+            referer=primed_url,
+        )
+        if status >= 400:
+            raise ProviderError(f"Provider search HTTP {status}")
+        return self._extract_items(source, final_url)
+
     async def browse(self, *, category: str | None = None) -> list[MediaItem]:
         source, final_url, status, _ = await self._get_text(self._home_url())
         if status >= 400:

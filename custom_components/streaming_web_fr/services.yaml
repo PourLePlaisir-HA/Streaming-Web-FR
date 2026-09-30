@@ -1,3 +1,21 @@
 reload_config:
   name: Reload configuration
   description: Reload /config/streaming_web_fr.yaml without restarting Home Assistant.
+
+search_test:
+  name: Test Provider search
+  description: Test the Provider native search engine and return the parsed media results.
+  fields:
+    query:
+      name: Search
+      description: Search text sent to the Provider.
+      required: true
+      example: "diner"
+      selector:
+        text:
+    provider_id:
+      name: Provider ID
+      description: Optional configured Provider ID. Leave empty to query all enabled Providers.
+      required: false
+      selector:
+        text:

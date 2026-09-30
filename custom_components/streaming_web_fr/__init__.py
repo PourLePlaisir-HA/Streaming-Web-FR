@@ -158,6 +158,35 @@ def _register_services(hass):
                 _LOGGER.exception("Unable to reload Streaming Web FR configuration")
                 raise
 
+    async def _search_test(call):
+        query = str(call.data.get("query") or "").strip()
+        provider_id = str(call.data.get("provider_id") or "").strip() or None
+        if len(query) < 2:
+            raise ValueError("La recherche doit contenir au moins 2 caractères")
+        data = _entry_data(hass)
+        if not data:
+            raise ValueError("Streaming Web FR not loaded")
+        items = await data["manager"].search(query, provider_id=provider_id)
+        response = {
+            "query": query,
+            "provider_id": provider_id,
+            "count": len(items),
+            "items": [item.as_dict() for item in items],
+        }
+        _LOGGER.info(
+            "Streaming Web FR search test: query=%r provider=%s results=%s",
+            query,
+            provider_id or "all",
+            len(items),
+        )
+        return response
+
+    hass.services.async_register(
+        DOMAIN,
+        "search_test",
+        _search_test,
+        supports_response="only",
+    )
     hass.services.async_register(DOMAIN, "reload_config", _reload_config)
     hass.data[DOMAIN]["_services_registered"] = True
 
@@ -240,6 +269,72 @@ def _register_ws(hass):
             )
         except Exception as err:
             connection.send_error(msg["id"], "catalog_error", str(err))
+
+    @websocket_api.websocket_command(
+        {
+            vol.Required("type"): f"{DOMAIN}/search",
+            vol.Optional("entry_id"): str,
+            vol.Optional("provider_id"): str,
+            vol.Required("query"): str,
+            vol.Optional("exact_naming"): bool,
+        }
+    )
+    @websocket_api.async_response
+    async def search(hass, connection, msg):
+        data = _entry_data(hass, msg.get("entry_id"))
+        if not data:
+            connection.send_error(msg["id"], "not_loaded", "Streaming Web FR not loaded")
+            return
+        query = str(msg.get("query") or "").strip()
+        if len(query) < 2:
+            connection.send_error(msg["id"], "invalid_query", "La recherche doit contenir au moins 2 caractères")
+            return
+        try:
+            selected_provider_id = msg.get("provider_id") or None
+            lovelace_override = msg.get("exact_naming") if "exact_naming" in msg else None
+            items = await data["manager"].search(
+                query,
+                provider_id=selected_provider_id,
+                exact_naming=lovelace_override,
+            )
+            providers = (
+                [data["manager"].get(selected_provider_id)]
+                if selected_provider_id
+                else list(data["manager"]._providers.values())
+            )
+            effective_queries = {
+                provider.id: provider.search_query(query, exact_naming=lovelace_override)
+                for provider in providers
+            }
+            connection.send_result(
+                msg["id"],
+                {
+                    "providers": data["manager"].public_providers(),
+                    "players": _public_players(data["players"]),
+                    "items": [item.as_dict() for item in items],
+                    "config_source": data.get("config_source"),
+                    "config_path": data.get("config_path"),
+                    "config_issues": list(data.get("config_issues") or []),
+                    "version": VERSION,
+                    "has_more": False,
+                    "next_cursor": None,
+                    "page": 1,
+                    "search_mode": "provider_native",
+                    "query": query,
+                    "query_sent": effective_queries,
+                    "exact_naming": {
+                        provider.id: (
+                            bool(lovelace_override)
+                            if lovelace_override is not None
+                            else bool(provider.config.get("exact_naming", True))
+                        )
+                        for provider in providers
+                    },
+                    "exact_naming_source": "lovelace" if lovelace_override is not None else "provider",
+                },
+            )
+        except Exception as err:
+            connection.send_error(msg["id"], "search_error", str(err))
 
     @websocket_api.websocket_command(
         {
@@ -331,6 +426,7 @@ def _register_ws(hass):
 
     websocket_api.async_register_command(hass, runtime_info)
     websocket_api.async_register_command(hass, catalog)
+    websocket_api.async_register_command(hass, search)
     websocket_api.async_register_command(hass, details)
     websocket_api.async_register_command(hass, play)
     websocket_api.async_register_command(hass, resolve)

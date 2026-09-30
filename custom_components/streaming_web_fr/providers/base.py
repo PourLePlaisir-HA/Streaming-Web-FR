@@ -166,6 +166,40 @@ class StreamingProvider(ABC):
             "Trop de redirections HTTP : " + " | ".join(redirect_trace[-6:])
         )
 
+    async def _post_form_text(
+        self,
+        url: str,
+        data: dict[str, str],
+        *,
+        referer: str | None = None,
+    ) -> tuple[str, str, int, str]:
+        """POST a form while preserving the provider cookie/auth context."""
+        await self._ensure_form_login()
+        kwargs = self._request_kwargs()
+        headers = dict(kwargs.pop("headers", {}))
+        parsed_url = urlsplit(url)
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        headers["Origin"] = f"{parsed_url.scheme}://{parsed_url.netloc}"
+        if referer:
+            headers["Referer"] = referer
+        async with self.session.post(
+            url,
+            data=data,
+            headers=headers,
+            cookies=self._cookie_jar.filter_cookies(URL(url)),
+            timeout=aiohttp.ClientTimeout(total=20),
+            allow_redirects=True,
+            **kwargs,
+        ) as response:
+            self._cookie_jar.update_cookies(response.cookies, response.url)
+            body = await response.text(errors="replace")
+            return (
+                body,
+                str(response.url),
+                response.status,
+                response.headers.get("Content-Type", ""),
+            )
+
     @abstractmethod
     async def browse(self, *, category: str | None = None) -> list[MediaItem]:
         raise NotImplementedError
@@ -188,7 +222,11 @@ class StreamingProvider(ABC):
             items = [item for item in items if needle in item.title.casefold()]
         return CatalogPage(items=items, search_mode="local")
 
-    async def search(self, query: str) -> list[MediaItem]:
+    def search_query(self, query: str, *, exact_naming: bool | None = None) -> str:
+        """Return the effective query sent to this Provider."""
+        return str(query or "").strip()
+
+    async def search(self, query: str, *, exact_naming: bool | None = None) -> list[MediaItem]:
         query = str(query or "").strip().casefold()
         items = await self.browse()
         if not query:

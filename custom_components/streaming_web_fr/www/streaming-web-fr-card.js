@@ -26,6 +26,7 @@ class StreamingWebFrCard extends HTMLElement {
     this._catalogCategory = "all";
     this._visible = SWFR_DEFAULTS.posters_par_lot;
     this._searchTimer = null;
+    this._lastSearchQuery = null;
     this._popup = null;
     this._popupLoading = false;
     this._playStatus = "";
@@ -34,6 +35,7 @@ class StreamingWebFrCard extends HTMLElement {
   }
 
   setConfig(config) {
+    this._rawConfig = { ...(config || {}) };
     this._config = {
       ...SWFR_DEFAULTS,
       ...(config || {}),
@@ -146,6 +148,33 @@ class StreamingWebFrCard extends HTMLElement {
       this._loading = false;
       this._render();
       this._restoreFocus(focus2);
+    }
+  }
+
+  async _runSearch() {
+    if (!this._hass || this._loading) return;
+    const query = String(this._query || "").trim();
+    if (query.length < 2) return;
+    const signature = `${this._provider}|${query}`;
+    if (signature === this._lastSearchQuery) return;
+    this._lastSearchQuery = signature;
+    this._loading = true;
+    this._error = null;
+    this._render();
+    try {
+      const msg = { type: "streaming_web_fr/search", query };
+      if (this._provider) msg.provider_id = this._provider;
+      if (Object.prototype.hasOwnProperty.call(this._rawConfig || {}, "exact_naming")) {
+        msg.exact_naming = Boolean(this._config.exact_naming);
+      }
+      this._data = await this._hass.callWS(msg);
+      this._loaded = true;
+      this._visible = this._config.posters_par_lot;
+    } catch (err) {
+      this._error = String(err?.message || err);
+    } finally {
+      this._loading = false;
+      this._render();
     }
   }
 
@@ -291,7 +320,9 @@ class StreamingWebFrCard extends HTMLElement {
               <h2>${this._esc(item.title || "")}</h2>
               ${item.year ? `<div class="modal-year">${this._esc(item.year)}</div>` : ""}
               <p>${this._esc(item.overview || "Aucun synopsis disponible.")}</p>
-              ${this._config.debug ? `<div class="modal-debug">provider_item_id: ${this._esc(item.provider_item_id || "—")}<br>page_url: ${this._esc(item.page_url || "—")}<br>page_referer: ${this._esc(item.extra?.source_url || "—")}</div>` : ""}
+
+
+          ${this._config.debug ? `<div class="modal-debug">provider_item_id: ${this._esc(item.provider_item_id || "—")}<br>page_url: ${this._esc(item.page_url || "—")}<br>page_referer: ${this._esc(item.extra?.source_url || "—")}</div>` : ""}
               <div class="play-list">
                 ${players || '<div class="hint">Aucune destination Android TV configurée.</div>'}
               </div>
@@ -312,6 +343,7 @@ class StreamingWebFrCard extends HTMLElement {
     const hasMore = hasLocalMore || hasRemoteMore;
     const providers = this._data?.providers || [];
     const catalogMode = this._view === "catalog";
+    const searchResultsMode = this._data?.search_mode === "provider_native" && Boolean(this._query.trim());
     const homeSections = this._sectionDefinitions().map((section) => this._homeSection(section)).join("");
 
     this.shadowRoot.innerHTML = `
@@ -337,7 +369,7 @@ class StreamingWebFrCard extends HTMLElement {
         .search-wrap{position:relative;flex:1 1 240px;min-width:180px}
         .search{box-sizing:border-box;width:100%;height:40px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:var(--secondary-background-color,#ededed);color:var(--primary-text-color,#111);padding:0 38px 0 12px;outline:none}
         .search:focus{border-color:rgba(255,255,255,.4);box-shadow:0 0 0 2px rgba(255,255,255,.08)}
-        .search-icon{position:absolute;right:10px;top:9px;color:rgba(255,255,255,.55)}
+        .search-icon{position:absolute;right:10px;top:9px;color:rgba(255,255,255,.55)}\n        .search-submit,.search-clear{position:absolute;right:5px;top:4px;width:32px;height:32px;border:0;border-radius:999px;background:transparent;color:var(--secondary-text-color,#666);display:grid;place-items:center;cursor:pointer}.search-submit ha-icon,.search-clear ha-icon{--mdc-icon-size:20px}
         select{height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:#fff;padding:0 10px}
         .providers,.categories{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
         .providers::-webkit-scrollbar,.categories::-webkit-scrollbar{display:none}
@@ -355,7 +387,7 @@ class StreamingWebFrCard extends HTMLElement {
         .source.provider-drabam{color:#e5b52a;font-family:"Arial Black",Impact,Arial,sans-serif;font-weight:900;letter-spacing:.3px;text-transform:uppercase;text-shadow:0 1px 1px rgba(0,0,0,.35)}
         .year{right:6px}
         .poster-title{font-size:12px;font-weight:600;line-height:1.25;margin:7px 3px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-        .more{display:flex;justify-content:center;margin-top:18px}
+        .search-results-head{display:flex;align-items:center;gap:10px;margin:4px 0 12px}.search-results-head strong{flex:1}.search-home{display:inline-flex;align-items:center;gap:5px;border:0;border-radius:999px;padding:7px 11px;background:var(--secondary-background-color,#eee);color:var(--primary-text-color,#222);cursor:pointer}.search-home ha-icon{--mdc-icon-size:18px}.search-results-head span{font-size:12px;color:var(--secondary-text-color,#666)}\n        .more{display:flex;justify-content:center;margin-top:18px}
         .more button{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;padding:9px 18px;cursor:pointer}
         .state{display:flex;align-items:center;justify-content:center;gap:8px;min-height:160px;color:rgba(255,255,255,.7)}
         .error{color:#ffb4ab}
@@ -421,7 +453,9 @@ class StreamingWebFrCard extends HTMLElement {
               <span>page: ${this._esc(this._data?.page ?? 0)}</span>
               <span>has_more: ${hasRemoteMore}</span>
               <span>cursor: ${this._esc(this._data?.next_cursor || "—")}</span>
-              <span>search: ${this._esc(this._data?.search_mode || "—")}</span>
+              <span>search: ${this._esc(this._data?.search_mode || "—")}</span>\n              <span>query: ${this._esc(this._data?.query || "—")}</span>\n              <span>query_sent: ${this._esc(this._data?.query_sent ? JSON.stringify(this._data.query_sent) : "—")}</span>
+              <span>exact_naming: ${this._esc(this._data?.exact_naming ? JSON.stringify(this._data.exact_naming) : "—")}</span>
+              <span>exact_naming_source: ${this._esc(this._data?.exact_naming_source || "—")}</span>
               <span>players: ${(this._data?.players || []).length}</span>
               <span>ids: ${this._esc((this._data?.players || []).map((p) => p.id).join(", ") || "—")}</span>
               <span>config: ${this._esc(this._data?.config_path || "—")}</span>
@@ -429,10 +463,27 @@ class StreamingWebFrCard extends HTMLElement {
             </div>
           ` : ""}
 
+          ${this._config.searchbox && !catalogMode ? `
+            <div class="toolbar home-search">
+              <div class="search-wrap">
+                <input class="search" type="search" value="${this._esc(this._query)}" placeholder="Rechercher un titre…">
+                ${this._query ? '<button class="search-clear" type="button" aria-label="Effacer" data-search-clear><ha-icon icon="mdi:close"></ha-icon></button>' : '<button class="search-submit" type="button" aria-label="Rechercher" data-search-submit><ha-icon icon="mdi:magnify"></ha-icon></button>'}
+              </div>
+            </div>
+          ` : ""}
+
+
           ${this._loading && !this._loaded ? `
             <div class="state"><ha-icon class="spin" icon="mdi:loading"></ha-icon>Chargement du catalogue…</div>
           ` : this._error ? `
             <div class="state error"><ha-icon icon="mdi:alert-circle-outline"></ha-icon>${this._esc(this._error)}</div>
+          ` : searchResultsMode ? `
+            ${visible.length ? `
+              <div class="search-results-head"><button class="search-home" type="button" data-search-home><ha-icon icon="mdi:home-outline"></ha-icon>Accueil</button><strong>Résultats de recherche</strong><span>${items.length} résultat${items.length > 1 ? "s" : ""}</span></div>
+              <div class="rail ${this._config.scroll_direction === "vertical" ? "rail-vertical" : "rail-horizontal"}" style="--poster-rows:${this._config.poster_rows}">
+                ${items.map((item) => this._poster(item)).join("")}
+              </div>
+            ` : `<div class="state"><ha-icon icon="mdi:movie-search-outline"></ha-icon>Aucun résultat pour « ${this._esc(this._query)} ».</div>`}
           ` : !catalogMode ? `
             ${homeSections || `<div class="state"><ha-icon icon="mdi:movie-search-outline"></ha-icon>Aucune section détectée sur la page d'accueil.</div>`}
             <div class="explore">
@@ -447,11 +498,6 @@ class StreamingWebFrCard extends HTMLElement {
             </div>
 
             <div class="toolbar">
-              ${this._config.searchbox ? `
-                <div class="search-wrap">
-                  <input class="search" type="search" value="${this._esc(this._query)}" placeholder="Rechercher un titre…">
-                  <ha-icon class="search-icon" icon="mdi:magnify"></ha-icon>
-                </div>` : ""}
               <select class="sort" aria-label="Tri">
                 <option value="default" ${this._sort==="default"?"selected":""}>Ordre provider</option>
                 <option value="title" ${this._sort==="title"?"selected":""}>Titre A–Z</option>
@@ -535,19 +581,39 @@ class StreamingWebFrCard extends HTMLElement {
     const search = root.querySelector(".search");
     if (search) {
       const block = (event) => event.stopPropagation();
-      search.addEventListener("keydown", block);
+      search.addEventListener("keydown", (event) => {
+        event.stopPropagation();
+        if (event.key === "Enter") {
+          event.preventDefault();
+          this._query = event.target.value;
+          this._runSearch();
+        }
+      });
       search.addEventListener("keyup", block);
       search.addEventListener("keypress", block);
       search.addEventListener("input", (event) => {
         event.stopPropagation();
         this._query = event.target.value;
-        clearTimeout(this._searchTimer);
-        this._searchTimer = setTimeout(() => {
-          this._visible = this._config.posters_par_lot;
-          this._load();
-        }, 280);
+      });
+      root.querySelector("[data-search-submit]")?.addEventListener("click", () => {
+        this._query = search.value;
+        this._runSearch();
+      });
+      root.querySelector("[data-search-clear]")?.addEventListener("click", () => {
+        this._query = "";
+        this._lastSearchQuery = null;
+        this._loaded = false;
+        this._load();
       });
     }
+
+    root.querySelector("[data-search-home]")?.addEventListener("click", () => {
+      this._query = "";
+      this._lastSearchQuery = null;
+      this._loaded = false;
+      this._view = "home";
+      this._load();
+    });
 
     root.querySelector(".refresh")?.addEventListener("click", async () => {
       this._loaded = false;
