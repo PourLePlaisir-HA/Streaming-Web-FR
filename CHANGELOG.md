@@ -1,3 +1,10 @@
+## 0.6.1
+
+- Updated public-facing documentation to use the generic **Provider** wording.
+- Kept provider names configurable and displayed dynamically in Lovelace badges.
+- Updated the Streaming Web FR integration branding assets.
+- No provider parser, routing or playback behavior changes.
+
 ## 0.6.0-beta.5
 
 - Added a provider-scoped cookie jar independent from Home Assistant's shared HTTP session.
