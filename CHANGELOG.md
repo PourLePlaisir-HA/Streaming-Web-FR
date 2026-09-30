@@ -1,3 +1,12 @@
+## 0.9.0-beta.2
+
+- Includes the validated optional current-device playback introduced in beta.1.
+- Validated direct stream playback on iPhone and Chrome on macOS.
+- Fixed the media popup width and centering on mobile.
+- Prevented horizontal overflow on iPhone/Safari by constraining the overlay, modal grid, playback buttons and embedded video to the available width.
+- Keeps `play_on_current_device: false` as the backward-compatible default.
+- Android TV / VLC playback remains unchanged.
+
 ## 0.9.0-beta.1
 
 - Added optional Lovelace setting `play_on_current_device: true`.
