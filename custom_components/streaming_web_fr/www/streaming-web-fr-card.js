@@ -438,15 +438,6 @@ class StreamingWebFrCard extends HTMLElement {
             </div>
           </div>
 
-          ${this._config.searchbox && !catalogMode ? `
-            <div class="toolbar home-search">
-              <div class="search-wrap">
-                <input class="search" type="search" value="${this._esc(this._query)}" placeholder="Rechercher un titre…">
-                ${this._query ? '<button class="search-clear" type="button" aria-label="Effacer" data-search-clear><ha-icon icon="mdi:close"></ha-icon></button>' : '<button class="search-submit" type="button" aria-label="Rechercher" data-search-submit><ha-icon icon="mdi:magnify"></ha-icon></button>'}
-              </div>
-            </div>
-          ` : ""}
-
           ${this._config.debug ? `
             <div class="debug">
               <strong>Debug</strong>
@@ -465,6 +456,16 @@ class StreamingWebFrCard extends HTMLElement {
               ${(this._data?.config_issues || []).map((issue) => `<span class="debug-issue">${this._esc(issue)}</span>`).join("")}
             </div>
           ` : ""}
+
+          ${this._config.searchbox && !catalogMode ? `
+            <div class="toolbar home-search">
+              <div class="search-wrap">
+                <input class="search" type="search" value="${this._esc(this._query)}" placeholder="Rechercher un titre…">
+                ${this._query ? '<button class="search-clear" type="button" aria-label="Effacer" data-search-clear><ha-icon icon="mdi:close"></ha-icon></button>' : '<button class="search-submit" type="button" aria-label="Rechercher" data-search-submit><ha-icon icon="mdi:magnify"></ha-icon></button>'}
+              </div>
+            </div>
+          ` : ""}
+
 
           ${this._loading && !this._loaded ? `
             <div class="state"><ha-icon class="spin" icon="mdi:loading"></ha-icon>Chargement du catalogue…</div>
