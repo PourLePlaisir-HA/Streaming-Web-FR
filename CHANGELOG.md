@@ -1,3 +1,11 @@
+## 0.8.0-beta.2
+
+- Improved native Provider search request fidelity.
+- Prime the Provider session before submitting a search so cookies/context match normal browser navigation.
+- Submit search as an URL-encoded form with Origin and Referer headers.
+- Keep `streaming_web_fr.search_test` as the validation path for the backend search.
+- SearchBox and Lovelace visual-editor configuration are deferred to a later version.
+
 ## 0.8.0-beta.1
 
 - Added the first backend implementation of native Provider search.
