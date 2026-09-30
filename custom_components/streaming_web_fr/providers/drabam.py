@@ -215,7 +215,7 @@ class DrabamProvider(StreamingProvider):
             poster = urljoin(final_url, img_match.group(1)) if img_match else None
 
             title_match = _TITLE_ATTR_RE.search(body)
-            title = _clean(title_match.group(1) if title_match else body)
+            title = _clean(title_match.group("value") if title_match else body)
             if not title:
                 title = f"Provider {item_id}"
 
