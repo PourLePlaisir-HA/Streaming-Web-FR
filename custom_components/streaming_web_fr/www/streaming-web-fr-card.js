@@ -35,6 +35,7 @@ class StreamingWebFrCard extends HTMLElement {
   }
 
   setConfig(config) {
+    this._rawConfig = { ...(config || {}) };
     this._config = {
       ...SWFR_DEFAULTS,
       ...(config || {}),
