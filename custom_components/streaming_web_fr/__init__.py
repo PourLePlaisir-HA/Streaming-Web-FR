@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -9,13 +10,27 @@ from homeassistant.components import websocket_api
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CARD_RESOURCE_PATH, CONF_PLAYERS, CONF_PROVIDERS, DOMAIN, VERSION
+from .const import CARD_RESOURCE_PATH, CONF_PLAYERS, CONF_PROVIDERS, DOMAIN
 from .lovelace_resource import async_register_lovelace_resource, async_remove_lovelace_resource
 from .playback import async_launch_vlc
 from .providers import ProviderManager
 from .settings import async_load_yaml_config, config_path, fallback_from_entry
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _integration_version() -> str:
+    """Read the integration version from manifest.json, the single source of truth."""
+    try:
+        manifest_path = Path(__file__).with_name("manifest.json")
+        with manifest_path.open("r", encoding="utf-8") as manifest_file:
+            return str(json.load(manifest_file).get("version") or "unknown")
+    except (OSError, ValueError, TypeError):
+        _LOGGER.exception("Unable to read integration version from manifest.json")
+        return "unknown"
+
+
+VERSION = _integration_version()
 
 
 async def async_setup(hass, config):
