@@ -158,6 +158,35 @@ def _register_services(hass):
                 _LOGGER.exception("Unable to reload Streaming Web FR configuration")
                 raise
 
+    async def _search_test(call):
+        query = str(call.data.get("query") or "").strip()
+        provider_id = str(call.data.get("provider_id") or "").strip() or None
+        if len(query) < 2:
+            raise ValueError("La recherche doit contenir au moins 2 caractères")
+        data = _entry_data(hass)
+        if not data:
+            raise ValueError("Streaming Web FR not loaded")
+        items = await data["manager"].search(query, provider_id=provider_id)
+        response = {
+            "query": query,
+            "provider_id": provider_id,
+            "count": len(items),
+            "items": [item.as_dict() for item in items],
+        }
+        _LOGGER.info(
+            "Streaming Web FR search test: query=%r provider=%s results=%s",
+            query,
+            provider_id or "all",
+            len(items),
+        )
+        return response
+
+    hass.services.async_register(
+        DOMAIN,
+        "search_test",
+        _search_test,
+        supports_response="only",
+    )
     hass.services.async_register(DOMAIN, "reload_config", _reload_config)
     hass.data[DOMAIN]["_services_registered"] = True
 
