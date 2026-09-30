@@ -1,3 +1,11 @@
+## 0.8.0-beta.10
+
+- Search results now inherit the card's global poster layout instead of using a dedicated unrestricted grid.
+- `scroll_direction` and `poster_rows` are preserved in search-result mode.
+- Vertical search results remain bounded to the configured number of visible poster rows and scroll inside the card.
+- Horizontal search results retain the global horizontal rail behavior.
+- Includes all validated native-search, standalone-results, debug and `exact_naming` precedence changes from beta.9.
+
 ## 0.8.0-beta.9
 
 - Lovelace `exact_naming` now overrides the Provider setting for searches launched from that card.
