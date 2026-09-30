@@ -239,7 +239,7 @@ class StreamingWebFrCard extends HTMLElement {
       <button class="poster" data-uid="${this._esc(item.uid)}" type="button">
         <div class="art">
           ${src}
-          <span class="source ${String(item.provider_id || "").toLowerCase() === "drabam" ? "provider-drabam" : ""}">${this._esc(this._providerName(item.provider_id))}</span>
+          <span class="source ${String(item.provider_id || "") ? "provider-current" : ""}">${this._esc(this._providerName(item.provider_id))}</span>
           ${year}
         </div>
         <div class="poster-title">${this._esc(item.title || "Sans titre")}</div>
@@ -347,7 +347,7 @@ class StreamingWebFrCard extends HTMLElement {
         .poster-empty ha-icon{--mdc-icon-size:42px}
         .source,.year{position:absolute;bottom:7px;border-radius:999px;font-size:10px;line-height:1;padding:5px 7px;background:rgba(0,0,0,.72);backdrop-filter:blur(8px)}
         .source{left:6px;max-width:68%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f5f5f5;font-weight:700}
-        .source.provider-drabam{color:#e5b52a;font-family:"Arial Black",Impact,Arial,sans-serif;font-weight:900;letter-spacing:.3px;text-transform:uppercase;text-shadow:0 1px 1px rgba(0,0,0,.35)}
+        .source.provider-current{color:#e5b52a;font-family:"Arial Black",Impact,Arial,sans-serif;font-weight:900;letter-spacing:.3px;text-transform:uppercase;text-shadow:0 1px 1px rgba(0,0,0,.35)}
         .year{right:6px}
         .poster-title{font-size:12px;font-weight:600;line-height:1.25;margin:7px 3px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
         .more{display:flex;justify-content:center;margin-top:18px}
