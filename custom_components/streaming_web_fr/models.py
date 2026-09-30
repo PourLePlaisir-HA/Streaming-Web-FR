@@ -40,6 +40,15 @@ class MediaItem:
 
 
 @dataclass(slots=True)
+class CatalogPage:
+    items: list[MediaItem] = field(default_factory=list)
+    next_cursor: str | None = None
+    has_more: bool = False
+    page: int = 0
+    search_mode: str = "local"
+
+
+@dataclass(slots=True)
 class ResolvedStream:
     provider_id: str
     provider_item_id: str

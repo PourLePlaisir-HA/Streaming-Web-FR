@@ -1,3 +1,54 @@
+## 0.6.0-beta.5
+
+- Added a provider-scoped cookie jar independent from Home Assistant's shared HTTP session.
+- Persisted provider cookies across catalog, details, player and manifest requests.
+- Replaced automatic redirects with bounded manual redirect handling.
+- Applied updated cookies before every redirect, matching browser navigation more closely.
+- Added explicit, path-only redirect traces when the provider still returns a loop.
+- Kept beta.4 URL and referer validation unchanged.
+
+## 0.6.0-beta.4
+
+- Preserved the source catalog URL for every parsed media item.
+- Sent the validated catalog URL as the HTTP referer when opening media details.
+- Forwarded the same provider context through details and stream resolution.
+- Added a browser-compatible French `Accept-Language` request header.
+- Added the source referer to popup diagnostics when `debug: true`.
+- Kept the URL validation and redirect-loop safeguards introduced in beta.3.
+
+## 0.6.0-beta.3
+
+- Fixed media details and playback for items loaded from deeper provider catalog pages.
+- Preserved and reused the exact provider item URL instead of rebuilding it only from the item ID.
+- Added strict same-provider URL validation before a catalog URL can be used by the backend.
+- Added canonical trailing-slash and legacy URL fallbacks for provider routing compatibility.
+- Added an explicit error when a media page enters a redirect loop.
+- Added the media provider ID and page URL to the popup when `debug: true`.
+- Kept catalog pagination, search and Android TV / VLC launch behavior unchanged.
+
+## 0.6.0-beta.2
+
+- Added real provider-side catalog pagination with opaque continuation cursors.
+- **Voir N de plus** now fetches the next provider page after the local pool is exhausted.
+- Infinite scroll now extends the remote catalog instead of stopping at the initial fetch.
+- Added bounded global catalog search with continuation when no native provider search is available.
+- Added duplicate-page and empty-page guards to stop pagination safely.
+- Added multi-provider cursor support without exposing provider pagination details to Lovelace.
+- Added integration version, provider page, `has_more`, cursor and search mode to `debug: true`.
+- Kept `debug: false` as the implicit default.
+- Kept the home rails, media popup and Android TV / VLC playback unchanged.
+
+## 0.6.0-beta.1
+
+- Added a Drabam-style Lovelace home view with **Derniers ajouts**, **À l'affiche**, **Animations** and **Docs & Spectacles** rails.
+- Added **Voir tout** navigation for each home section.
+- Added **Explorer le catalogue** and a dedicated catalog view with section filters, search, sorting, provider filter, pagination and optional infinite scroll.
+- Extended the Drabam parser to detect home sections and follow the provider's **Tout** catalog link.
+- Kept Android TV / VLC playback and the existing details popup unchanged.
+- Kept user-state features out of this project: no **Ma liste**, **Vu** or **Pas encore vu** UI.
+- Added `home_section_count` (default: `10`) for the number of posters displayed per home rail.
+- Confirmed Lovelace `debug` defaults to `false` when omitted; `debug: true` exposes technical view/category, item count, config source, players and parser/config issues.
+
 # Changelog
 
 ## 0.5.1

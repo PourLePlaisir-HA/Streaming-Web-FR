@@ -1,7 +1,7 @@
 # Streaming Web FR
 
 <p align="center">
-  <img src="icon.svg" alt="Streaming Web FR" width="160">
+  <img src="https://raw.githubusercontent.com/PourLePlaisir-HA/Streaming-Web-FR/main/icon.svg" alt="Streaming Web FR" width="160">
 </p>
 
 <p align="center">
@@ -67,11 +67,16 @@ type: custom:streaming-web-fr-card
 title: Streaming Web
 searchbox: true
 posters_par_lot: 8
+home_section_count: 10
 scroll_infini: false
 debug: false
 ```
 
-Set `debug: true` temporarily for diagnostics. The card can then expose the active configuration source, YAML path, detected Android TV destinations and parser issues.
+If `debug` is omitted, it defaults to `false`. Set `debug: true` temporarily for diagnostics. The card can then expose the current view/category, item count, active configuration source, YAML path, detected Android TV destinations and parser issues.
+
+In the catalog view, **Voir N de plus** and optional infinite scroll reveal the local batch first, then transparently request the next page from the provider. Search follows the provider catalog beyond the initially loaded pool. With `debug: true`, the card also shows the integration version, provider page, continuation state and search mode.
+
+The default home view mirrors the provider's editorial structure with horizontal rails for **Derniers ajouts**, **À l'affiche**, **Animations** and **Docs & Spectacles**. **Explorer le catalogue** opens the complete catalog, while **Voir tout** opens the corresponding section.
 
 ## YAML configuration
 

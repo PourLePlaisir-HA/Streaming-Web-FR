@@ -9,7 +9,7 @@ from homeassistant.components import websocket_api
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CARD_RESOURCE_PATH, CONF_PLAYERS, CONF_PROVIDERS, DOMAIN
+from .const import CARD_RESOURCE_PATH, CONF_PLAYERS, CONF_PROVIDERS, DOMAIN, VERSION
 from .lovelace_resource import async_register_lovelace_resource, async_remove_lovelace_resource
 from .playback import async_launch_vlc
 from .providers import ProviderManager
@@ -171,6 +171,7 @@ def _register_ws(hass):
                 "config_source": data.get("config_source"),
                 "config_path": data.get("config_path"),
                 "config_issues": list(data.get("config_issues") or []),
+                "version": VERSION,
             },
         )
 
@@ -180,6 +181,9 @@ def _register_ws(hass):
             vol.Optional("entry_id"): str,
             vol.Optional("provider_id"): str,
             vol.Optional("query"): str,
+            vol.Optional("category"): str,
+            vol.Optional("cursor"): str,
+            vol.Optional("limit", default=24): vol.All(vol.Coerce(int), vol.Range(min=1, max=100)),
         }
     )
     @websocket_api.async_response
@@ -189,10 +193,20 @@ def _register_ws(hass):
             connection.send_error(msg["id"], "not_loaded", "Streaming Web FR not loaded")
             return
         try:
-            items = await data["manager"].catalog(
-                provider_id=msg.get("provider_id") or None,
-                query=msg.get("query") or None,
-            )
+            if not msg.get("category") and not msg.get("query") and not msg.get("cursor"):
+                items = await data["manager"].catalog(
+                    provider_id=msg.get("provider_id") or None,
+                )
+                page = None
+            else:
+                page = await data["manager"].catalog_page(
+                    provider_id=msg.get("provider_id") or None,
+                    query=msg.get("query") or None,
+                    category=msg.get("category") or None,
+                    cursor=msg.get("cursor") or None,
+                    limit=msg.get("limit") or 24,
+                )
+                items = page.items
             connection.send_result(
                 msg["id"],
                 {
@@ -202,6 +216,11 @@ def _register_ws(hass):
                     "config_source": data.get("config_source"),
                     "config_path": data.get("config_path"),
                     "config_issues": list(data.get("config_issues") or []),
+                    "version": VERSION,
+                    "has_more": page.has_more if page else False,
+                    "next_cursor": page.next_cursor if page else None,
+                    "page": page.page if page else 0,
+                    "search_mode": page.search_mode if page else "home",
                 },
             )
         except Exception as err:
@@ -213,6 +232,8 @@ def _register_ws(hass):
             vol.Optional("entry_id"): str,
             vol.Required("provider_id"): str,
             vol.Required("provider_item_id"): str,
+            vol.Optional("page_url"): str,
+            vol.Optional("page_referer"): str,
         }
     )
     @websocket_api.async_response
@@ -225,6 +246,8 @@ def _register_ws(hass):
             item = await data["manager"].details(
                 msg["provider_id"],
                 msg["provider_item_id"],
+                page_url=msg.get("page_url") or None,
+                page_referer=msg.get("page_referer") or None,
             )
             connection.send_result(msg["id"], item.as_dict())
         except Exception as err:
@@ -237,6 +260,8 @@ def _register_ws(hass):
             vol.Required("provider_id"): str,
             vol.Required("provider_item_id"): str,
             vol.Required("player_id"): str,
+            vol.Optional("page_url"): str,
+            vol.Optional("page_referer"): str,
         }
     )
     @websocket_api.async_response
@@ -249,6 +274,8 @@ def _register_ws(hass):
             stream = await data["manager"].resolve(
                 msg["provider_id"],
                 msg["provider_item_id"],
+                page_url=msg.get("page_url") or None,
+                page_referer=msg.get("page_referer") or None,
             )
             player = _player(data["players"], msg["player_id"])
             await async_launch_vlc(hass, player, stream.url)
@@ -266,6 +293,8 @@ def _register_ws(hass):
             vol.Optional("entry_id"): str,
             vol.Required("provider_id"): str,
             vol.Required("provider_item_id"): str,
+            vol.Optional("page_url"): str,
+            vol.Optional("page_referer"): str,
         }
     )
     @websocket_api.async_response
@@ -278,6 +307,8 @@ def _register_ws(hass):
             stream = await data["manager"].resolve(
                 msg["provider_id"],
                 msg["provider_item_id"],
+                page_url=msg.get("page_url") or None,
+                page_referer=msg.get("page_referer") or None,
             )
             connection.send_result(msg["id"], stream.as_dict())
         except Exception as err:
