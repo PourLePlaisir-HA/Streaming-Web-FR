@@ -157,7 +157,7 @@ class StreamingWebFrConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=_provider_schema(
                 {
-                    "name": "Drabam",
+                    "name": "Provider",
                     "type": "drabam",
                     "priority": 100,
                     "enabled": True,
