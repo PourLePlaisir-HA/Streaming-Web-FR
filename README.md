@@ -1,7 +1,7 @@
 # Streaming Web FR
 
 <p align="center">
-  <img src="icon.svg" alt="Streaming Web FR" width="160">
+  <img src="https://raw.githubusercontent.com/PourLePlaisir-HA/Streaming-Web-FR/main/icon.svg" alt="Streaming Web FR" width="160">
 </p>
 
 <p align="center">
