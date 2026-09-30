@@ -21,6 +21,7 @@ class StreamingWebFrCard extends HTMLElement {
     this._data = { providers: [], players: [], items: [] };
     this._provider = "";
     this._query = "";
+    this._searchDraft = "";
     this._sort = "default";
     this._view = "home";
     this._catalogCategory = "all";
@@ -369,6 +370,8 @@ class StreamingWebFrCard extends HTMLElement {
         .search-wrap{position:relative;flex:1 1 240px;min-width:180px}
         .search{box-sizing:border-box;width:100%;height:40px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:var(--secondary-background-color,#ededed);color:var(--primary-text-color,#111);padding:0 38px 0 12px;outline:none}
         .search:focus{border-color:rgba(255,255,255,.4);box-shadow:0 0 0 2px rgba(255,255,255,.08)}
+        .search::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none}
+        .search::-webkit-search-decoration{-webkit-appearance:none;appearance:none}
         .search-icon{position:absolute;right:10px;top:9px;color:rgba(255,255,255,.55)}\n        .search-submit,.search-clear{position:absolute;right:5px;top:4px;width:32px;height:32px;border:0;border-radius:999px;background:transparent;color:var(--secondary-text-color,#666);display:grid;place-items:center;cursor:pointer}.search-submit ha-icon,.search-clear ha-icon{--mdc-icon-size:20px}
         select{height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:#fff;padding:0 10px}
         .providers,.categories{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
@@ -466,7 +469,7 @@ class StreamingWebFrCard extends HTMLElement {
           ${this._config.searchbox && !catalogMode ? `
             <div class="toolbar home-search">
               <div class="search-wrap">
-                <input class="search" type="search" value="${this._esc(this._query)}" placeholder="Rechercher un titre…">
+                <input class="search" type="search" value="${this._esc(this._searchDraft || this._query)}" placeholder="Rechercher un titre…">
                 ${this._query ? '<button class="search-clear" type="button" aria-label="Effacer" data-search-clear><ha-icon icon="mdi:close"></ha-icon></button>' : '<button class="search-submit" type="button" aria-label="Rechercher" data-search-submit><ha-icon icon="mdi:magnify"></ha-icon></button>'}
               </div>
             </div>
@@ -585,7 +588,9 @@ class StreamingWebFrCard extends HTMLElement {
         event.stopPropagation();
         if (event.key === "Enter") {
           event.preventDefault();
-          this._query = event.target.value;
+          this._searchDraft = event.target.value;
+          this._query = this._searchDraft;
+          this._lastSearchQuery = null;
           this._runSearch();
         }
       });
@@ -593,14 +598,17 @@ class StreamingWebFrCard extends HTMLElement {
       search.addEventListener("keypress", block);
       search.addEventListener("input", (event) => {
         event.stopPropagation();
-        this._query = event.target.value;
+        this._searchDraft = event.target.value;
       });
       root.querySelector("[data-search-submit]")?.addEventListener("click", () => {
-        this._query = search.value;
+        this._searchDraft = search.value;
+        this._query = this._searchDraft;
+        this._lastSearchQuery = null;
         this._runSearch();
       });
       root.querySelector("[data-search-clear]")?.addEventListener("click", () => {
         this._query = "";
+        this._searchDraft = "";
         this._lastSearchQuery = null;
         this._loaded = false;
         this._load();
