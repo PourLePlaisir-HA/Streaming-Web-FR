@@ -177,6 +177,9 @@ class StreamingProvider(ABC):
         await self._ensure_form_login()
         kwargs = self._request_kwargs()
         headers = dict(kwargs.pop("headers", {}))
+        parsed_url = urlsplit(url)
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        headers["Origin"] = f"{parsed_url.scheme}://{parsed_url.netloc}"
         if referer:
             headers["Referer"] = referer
         async with self.session.post(
