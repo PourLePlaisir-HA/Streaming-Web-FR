@@ -12,9 +12,9 @@
 
 > This repository is fully independent from Streaming Top FR. It shares no runtime, storage, provider or service dependency with that project.
 
-## Current stable release — v0.5.1
+## Current stable release — v0.6.0
 
-The v0.5.1 release keeps the validated v0.5.0 runtime unchanged and adds the completed public documentation and project identity.
+The v0.6.0 release is the current validated stable baseline. It introduces the provider home rails and complete catalog navigation, remote pagination/search continuation, strengthened provider session and redirect handling, improved diagnostics, the refreshed Lovelace interface and the updated Streaming Web FR visual identity.
 
 ### Functional baseline
 
@@ -34,13 +34,17 @@ The v0.5.1 release keeps the validated v0.5.0 runtime unchanged and adds the com
 - runtime YAML reload;
 - diagnostics mode.
 
-### v0.5.1 additions
+### v0.6.0 highlights
 
-- refreshed public README;
-- documented YAML, Lovelace and Android TV/VLC configuration;
-- added the Streaming Web FR project icon;
-- turquoise + anthracite visual identity;
-- no functional regression or playback-engine change.
+- provider home rails: **Derniers ajouts**, **À l'affiche**, **Animations** and **Docs & Spectacles**;
+- **Voir tout** and complete catalog navigation;
+- provider-side pagination and catalog search continuation;
+- persistent provider cookies and safer redirect handling;
+- source URL / referer preservation for media details and playback;
+- expanded `debug: true` diagnostics;
+- refreshed Lovelace visual design;
+- improved provider badges, including the dedicated DRABAM text styling;
+- updated Streaming Web FR project and Home Assistant integration icon.
 
 ## Installation
 
