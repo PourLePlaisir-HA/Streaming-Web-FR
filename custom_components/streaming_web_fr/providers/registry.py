@@ -167,6 +167,29 @@ class ProviderManager:
             search_mode="+".join(sorted(search_modes)) or ("provider" if query else "local"),
         )
 
+    async def search(
+        self,
+        query: str,
+        *,
+        provider_id: str | None = None,
+    ) -> list[MediaItem]:
+        providers = [self.get(provider_id)] if provider_id else list(self._providers.values())
+        providers.sort(key=lambda p: (p.priority, p.name.casefold()))
+        batches = await asyncio.gather(
+            *(provider.search(query) for provider in providers),
+            return_exceptions=True,
+        )
+        items: list[MediaItem] = []
+        seen: set[str] = set()
+        for batch in batches:
+            if isinstance(batch, Exception):
+                continue
+            for item in batch:
+                if item.uid not in seen:
+                    seen.add(item.uid)
+                    items.append(item)
+        return items
+
     async def details(
         self,
         provider_id: str,
