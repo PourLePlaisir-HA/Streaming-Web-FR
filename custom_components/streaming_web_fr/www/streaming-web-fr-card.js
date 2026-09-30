@@ -325,6 +325,15 @@ class StreamingWebFrCard extends HTMLElement {
             </div>
           ` : ""}
 
+          ${this._config.searchbox && !catalogMode ? `
+            <div class="toolbar home-search">
+              <div class="search-wrap">
+                <input class="search" type="search" value="${this._esc(this._query)}" placeholder="Rechercher un titre…">
+                ${this._query ? '<button class="search-clear" type="button" aria-label="Effacer" data-search-clear><ha-icon icon="mdi:close"></ha-icon></button>' : '<button class="search-submit" type="button" aria-label="Rechercher" data-search-submit><ha-icon icon="mdi:magnify"></ha-icon></button>'}
+              </div>
+            </div>
+          ` : ""}
+
           ${this._config.debug ? `<div class="modal-debug">provider_item_id: ${this._esc(item.provider_item_id || "—")}<br>page_url: ${this._esc(item.page_url || "—")}<br>page_referer: ${this._esc(item.extra?.source_url || "—")}</div>` : ""}
               <div class="play-list">
                 ${players || '<div class="hint">Aucune destination Android TV configurée.</div>'}
