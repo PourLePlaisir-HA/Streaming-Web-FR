@@ -1,3 +1,32 @@
+## 0.7.0-beta.4
+
+- Fixed a regression introduced in beta.3 that could make the home/catalog parser return zero titles.
+- Aligned the quote-aware title/alt parser with its named `value` capture.
+- Preserves apostrophes inside titles such as `L'Affaire Zanetti`, `D'Artagnan` and `Ocean's Eleven`.
+- Includes the cumulative 0.7 beta changes: configurable vertical scrolling, `poster_rows` in YAML and Lovelace UI, automatic runtime version from `manifest.json`, and updated visual identity.
+- No intended changes to stream resolution or VLC playback.
+
+## 0.7.0-beta.3
+
+- Fixed Provider title parsing when titles contain apostrophes, including cases such as `L'Affaire`, `D'Artagnan` and `Ocean's Eleven`.
+- The parser now closes quoted HTML attributes only with the same quote character that opened them.
+- Fixed the Lovelace visual editor so `poster_rows` is actually configurable from the UI.
+- Runtime/debug version is now read automatically from `manifest.json` instead of being hardcoded.
+- Includes the configurable vertical home scrolling, bounded poster rows and visual identity changes from the 0.7.0 beta cycle.
+- No intended changes to Provider playback, stream resolution or VLC launching.
+
+## 0.7.0-beta.2
+
+- Added the validated Streaming Web FR visual identity assets.
+- Added configurable home-section direction with `scroll_direction: horizontal|vertical`.
+- Added true bounded vertical scrolling for home sections instead of displaying every poster at once.
+- Added `poster_rows` to configure the number of visible poster rows in vertical mode; default: `2`.
+- Added Lovelace visual editor controls for scroll direction and visible poster rows.
+- Kept `home_section_count` as the number of posters available in each home section.
+- Kept `posters_par_lot` dedicated to catalog pagination / “Voir N de plus”.
+- Kept `horizontal` as the default layout for backward compatibility.
+- Provider handling, details, stream resolution and VLC playback are unchanged.
+
 ## 0.6.1
 
 - Updated public-facing documentation to use the generic **Provider** wording.

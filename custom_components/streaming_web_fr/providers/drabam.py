@@ -17,7 +17,10 @@ _LINK_RE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 _IMG_RE = re.compile(r'<img[^>]+(?:src|data-src)=["\']([^"\']+)["\']', re.IGNORECASE)
-_TITLE_ATTR_RE = re.compile(r'(?:title|alt)=["\']([^"\']+)["\']', re.IGNORECASE)
+_TITLE_ATTR_RE = re.compile(
+    r"""(?:title|alt)=(?P<quote>["'])(?P<value>.*?)(?P=quote)""",
+    re.IGNORECASE | re.DOTALL,
+)
 _TAG_RE = re.compile(r"<[^>]+>")
 _YEAR_RE = re.compile(r"\b(19\d{2}|20\d{2})\b")
 _IFRAME_RE = re.compile(r'<iframe[^>]+src=["\']([^"\']+)["\']', re.IGNORECASE)
@@ -215,7 +218,7 @@ class DrabamProvider(StreamingProvider):
             poster = urljoin(final_url, img_match.group(1)) if img_match else None
 
             title_match = _TITLE_ATTR_RE.search(body)
-            title = _clean(title_match.group(1) if title_match else body)
+            title = _clean(title_match.group("value") if title_match else body)
             if not title:
                 title = f"Provider {item_id}"
 

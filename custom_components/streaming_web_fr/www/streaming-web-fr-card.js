@@ -4,6 +4,8 @@ const SWFR_DEFAULTS = {
   posters_par_lot: 8,
   home_section_count: 10,
   scroll_infini: false,
+  scroll_direction: "horizontal",
+  poster_rows: 2,
   debug: false,
 };
 
@@ -42,6 +44,9 @@ class StreamingWebFrCard extends HTMLElement {
     this._config.home_section_count = Number.isFinite(homeCount) && homeCount > 0 ? Math.floor(homeCount) : 10;
     this._config.searchbox = this._config.searchbox !== false;
     this._config.scroll_infini = this._config.scroll_infini === true;
+    this._config.scroll_direction = String(this._config.scroll_direction || "horizontal").toLowerCase() === "vertical" ? "vertical" : "horizontal";
+    const posterRows = Number(this._config.poster_rows);
+    this._config.poster_rows = Number.isFinite(posterRows) && posterRows > 0 ? Math.floor(posterRows) : 2;
     this._config.debug = this._config.debug === true;
     this._visible = this._config.posters_par_lot;
     this._render();
@@ -223,7 +228,7 @@ class StreamingWebFrCard extends HTMLElement {
           <h2>${this._esc(section.label)}</h2>
           <button type="button" class="see-all" data-open-category="${this._esc(section.key)}">Voir tout <ha-icon icon="mdi:chevron-right"></ha-icon></button>
         </div>
-        <div class="rail">
+        <div class="rail ${this._config.scroll_direction === "vertical" ? "rail-vertical" : "rail-horizontal"}" style="--poster-rows:${this._config.poster_rows}">
           ${items.map((item) => this._poster(item)).join("")}
         </div>
       </section>
@@ -325,7 +330,7 @@ class StreamingWebFrCard extends HTMLElement {
         .section-head h2{font-size:16px;margin:0}
         .see-all{display:flex;align-items:center;gap:2px;border:0;background:none;color:rgba(255,255,255,.72);cursor:pointer;padding:4px 0;font-size:12px}
         .see-all ha-icon{--mdc-icon-size:18px}
-        .rail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(125px,145px);gap:11px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:thin;overscroll-behavior-inline:contain}
+        .rail{display:grid;gap:11px;padding:2px 2px 8px;scrollbar-width:thin}.rail-horizontal{grid-auto-flow:column;grid-auto-columns:minmax(125px,145px);overflow-x:auto;overscroll-behavior-inline:contain}.rail-vertical{--poster-row-height:255px;grid-template-columns:repeat(auto-fill,minmax(125px,145px));max-height:calc((var(--poster-rows) * var(--poster-row-height)) + ((var(--poster-rows) - 1) * 11px));overflow-y:auto;overflow-x:hidden;overscroll-behavior-block:contain;align-items:start;padding-right:6px}
         .explore{display:flex;justify-content:center;margin:6px 0 2px}
         .explore button{display:flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.1);color:#fff;border-radius:999px;padding:10px 18px;cursor:pointer;font-weight:600}
         .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
@@ -382,7 +387,7 @@ class StreamingWebFrCard extends HTMLElement {
         @media(max-width:600px){
           .wrap{padding:12px}
           .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 7px}
-          .rail{grid-auto-columns:minmax(105px,33vw)}
+          .rail-horizontal{grid-auto-columns:minmax(105px,33vw)}.rail-vertical{--poster-row-height:225px;grid-template-columns:repeat(auto-fill,minmax(105px,1fr))}
           .poster-title{font-size:11px}
           .modal-grid{grid-template-columns:105px 1fr;gap:14px}
           .modal-poster{width:105px}
@@ -651,3 +656,74 @@ window.customCards.push({
   description: "Catalogue multi-provider avec lecture VLC sur Android TV",
   preview: true,
 });
+
+
+class StreamingWebFrCardEditor extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = {};
+  }
+
+  set hass(hass) { this._hass = hass; }
+
+  setConfig(config) {
+    this._config = { ...(config || {}) };
+    this._renderEditor();
+  }
+
+  _renderEditor() {
+    if (!this.shadowRoot) return;
+    const direction = String(this._config.scroll_direction || "horizontal").toLowerCase() === "vertical" ? "vertical" : "horizontal";
+    const rows = Math.max(1, Math.floor(Number(this._config.poster_rows) || 2));
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host{display:block;padding:8px 0}
+        .field{display:grid;gap:6px}
+        label{font-size:14px;font-weight:500;color:var(--primary-text-color)}
+        select,input{box-sizing:border-box;width:100%;min-height:44px;padding:0 12px;border:1px solid var(--divider-color,#ddd);border-radius:8px;background:var(--card-background-color,#fff);color:var(--primary-text-color);font:inherit}
+        .hint{font-size:12px;color:var(--secondary-text-color)}
+      </style>
+      <div class="field">
+        <label for="scroll-direction">Défilement des sections</label>
+        <select id="scroll-direction">
+          <option value="horizontal" ${direction === "horizontal" ? "selected" : ""}>Horizontal</option>
+          <option value="vertical" ${direction === "vertical" ? "selected" : ""}>Vertical</option>
+        </select>
+        <div class="hint">Définit l'affichage des posters sur la page d'accueil.</div>
+      </div>
+      <div class="field poster-rows-field" style="margin-top:14px;${direction === "vertical" ? "" : "opacity:.55"}">
+        <label for="poster-rows">Nombre de lignes de posters</label>
+        <input id="poster-rows" type="number" min="1" step="1" value="${rows}" ${direction === "vertical" ? "" : "disabled"}>
+        <div class="hint">Nombre de lignes visibles en mode vertical. Valeur par défaut : 2.</div>
+      </div>
+    `;
+    this.shadowRoot.querySelector("#scroll-direction")?.addEventListener("change", (event) => {
+      const config = { ...this._config, scroll_direction: event.target.value };
+      this._config = config;
+      this.dispatchEvent(new CustomEvent("config-changed", {
+        detail: { config },
+        bubbles: true,
+        composed: true,
+      }));
+    });
+    this.shadowRoot.querySelector("#poster-rows")?.addEventListener("change", (event) => {
+      const value = Math.max(1, Math.floor(Number(event.target.value) || 2));
+      const config = { ...this._config, poster_rows: value };
+      this._config = config;
+      this.dispatchEvent(new CustomEvent("config-changed", {
+        detail: { config },
+        bubbles: true,
+        composed: true,
+      }));
+    });
+  }
+}
+
+if (!customElements.get("streaming-web-fr-card-editor")) {
+  customElements.define("streaming-web-fr-card-editor", StreamingWebFrCardEditor);
+}
+
+StreamingWebFrCard.getConfigElement = function() {
+  return document.createElement("streaming-web-fr-card-editor");
+};
