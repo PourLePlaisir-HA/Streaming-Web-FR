@@ -654,3 +654,58 @@ window.customCards.push({
   description: "Catalogue multi-provider avec lecture VLC sur Android TV",
   preview: true,
 });
+
+
+class StreamingWebFrCardEditor extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this._config = {};
+  }
+
+  set hass(hass) { this._hass = hass; }
+
+  setConfig(config) {
+    this._config = { ...(config || {}) };
+    this._renderEditor();
+  }
+
+  _renderEditor() {
+    if (!this.shadowRoot) return;
+    const direction = String(this._config.scroll_direction || "horizontal").toLowerCase() === "vertical" ? "vertical" : "horizontal";
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host{display:block;padding:8px 0}
+        .field{display:grid;gap:6px}
+        label{font-size:14px;font-weight:500;color:var(--primary-text-color)}
+        select{box-sizing:border-box;width:100%;min-height:44px;padding:0 12px;border:1px solid var(--divider-color,#ddd);border-radius:8px;background:var(--card-background-color,#fff);color:var(--primary-text-color);font:inherit}
+        .hint{font-size:12px;color:var(--secondary-text-color)}
+      </style>
+      <div class="field">
+        <label for="scroll-direction">Défilement des sections</label>
+        <select id="scroll-direction">
+          <option value="horizontal" ${direction === "horizontal" ? "selected" : ""}>Horizontal</option>
+          <option value="vertical" ${direction === "vertical" ? "selected" : ""}>Vertical</option>
+        </select>
+        <div class="hint">Définit l'affichage des posters sur la page d'accueil.</div>
+      </div>
+    `;
+    this.shadowRoot.querySelector("#scroll-direction")?.addEventListener("change", (event) => {
+      const config = { ...this._config, scroll_direction: event.target.value };
+      this._config = config;
+      this.dispatchEvent(new CustomEvent("config-changed", {
+        detail: { config },
+        bubbles: true,
+        composed: true,
+      }));
+    });
+  }
+}
+
+if (!customElements.get("streaming-web-fr-card-editor")) {
+  customElements.define("streaming-web-fr-card-editor", StreamingWebFrCardEditor);
+}
+
+StreamingWebFrCard.getConfigElement = function() {
+  return document.createElement("streaming-web-fr-card-editor");
+};
