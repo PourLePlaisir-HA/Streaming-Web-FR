@@ -617,6 +617,7 @@ class StreamingWebFrCard extends HTMLElement {
 
     root.querySelector("[data-search-home]")?.addEventListener("click", () => {
       this._query = "";
+      this._searchDraft = "";
       this._lastSearchQuery = null;
       this._loaded = false;
       this._view = "home";
