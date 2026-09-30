@@ -1,3 +1,9 @@
+## 0.8.0-beta.6
+
+- Fixed the SearchBox rendering on the main Lovelace home view.
+- The SearchBox is now explicitly displayed below the card header and before the home sections when `searchbox: true`.
+- Keeps native Provider search and per-Provider `exact_naming` behavior from the previous betas.
+
 ## 0.8.0-beta.5
 
 - Moved the SearchBox to the main Lovelace home view.
