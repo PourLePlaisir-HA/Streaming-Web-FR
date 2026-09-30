@@ -56,6 +56,7 @@ def _provider_from_input(data: dict[str, Any], existing_ids: set[str]) -> dict[s
         "base_url": str(data.get("base_url") or "").strip().rstrip("/"),
         "enabled": bool(data.get("enabled", True)),
         "priority": int(data.get("priority") or 100),
+        "exact_naming": bool(data.get("exact_naming", True)),
         "auth": _auth_from_input(data),
     }
 
@@ -81,6 +82,8 @@ def _provider_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
             vol.Required("base_url", default=defaults.get("base_url", "")):
                 selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.URL)),
             vol.Required("enabled", default=bool(defaults.get("enabled", True))):
+                selector.BooleanSelector(),
+            vol.Required("exact_naming", default=bool(defaults.get("exact_naming", True))):
                 selector.BooleanSelector(),
             vol.Required("priority", default=int(defaults.get("priority", 100))):
                 selector.NumberSelector(
