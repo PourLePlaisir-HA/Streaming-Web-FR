@@ -4,6 +4,8 @@ const SWFR_DEFAULTS = {
   posters_par_lot: 8,
   home_section_count: 10,
   scroll_infini: false,
+      scroll_direction: "horizontal",
+  scroll_direction: "horizontal",
   debug: false,
 };
 
@@ -42,6 +44,7 @@ class StreamingWebFrCard extends HTMLElement {
     this._config.home_section_count = Number.isFinite(homeCount) && homeCount > 0 ? Math.floor(homeCount) : 10;
     this._config.searchbox = this._config.searchbox !== false;
     this._config.scroll_infini = this._config.scroll_infini === true;
+    this._config.scroll_direction = String(this._config.scroll_direction || "horizontal").toLowerCase() === "vertical" ? "vertical" : "horizontal";
     this._config.debug = this._config.debug === true;
     this._visible = this._config.posters_par_lot;
     this._render();
@@ -223,7 +226,7 @@ class StreamingWebFrCard extends HTMLElement {
           <h2>${this._esc(section.label)}</h2>
           <button type="button" class="see-all" data-open-category="${this._esc(section.key)}">Voir tout <ha-icon icon="mdi:chevron-right"></ha-icon></button>
         </div>
-        <div class="rail">
+        <div class="rail ${this._config.scroll_direction === "vertical" ? "rail-vertical" : "rail-horizontal"}">
           ${items.map((item) => this._poster(item)).join("")}
         </div>
       </section>
@@ -325,7 +328,7 @@ class StreamingWebFrCard extends HTMLElement {
         .section-head h2{font-size:16px;margin:0}
         .see-all{display:flex;align-items:center;gap:2px;border:0;background:none;color:rgba(255,255,255,.72);cursor:pointer;padding:4px 0;font-size:12px}
         .see-all ha-icon{--mdc-icon-size:18px}
-        .rail{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(125px,145px);gap:11px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:thin;overscroll-behavior-inline:contain}
+        .rail{display:grid;gap:11px;padding:2px 2px 8px;scrollbar-width:thin}.rail-horizontal{grid-auto-flow:column;grid-auto-columns:minmax(125px,145px);overflow-x:auto;overscroll-behavior-inline:contain}.rail-vertical{grid-template-columns:repeat(auto-fill,minmax(125px,145px));overflow:visible;align-items:start}
         .explore{display:flex;justify-content:center;margin:6px 0 2px}
         .explore button{display:flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.1);color:#fff;border-radius:999px;padding:10px 18px;cursor:pointer;font-weight:600}
         .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
@@ -382,7 +385,7 @@ class StreamingWebFrCard extends HTMLElement {
         @media(max-width:600px){
           .wrap{padding:12px}
           .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 7px}
-          .rail{grid-auto-columns:minmax(105px,33vw)}
+          .rail-horizontal{grid-auto-columns:minmax(105px,33vw)}.rail-vertical{grid-template-columns:repeat(auto-fill,minmax(105px,1fr))}
           .poster-title{font-size:11px}
           .modal-grid{grid-template-columns:105px 1fr;gap:14px}
           .modal-poster{width:105px}
