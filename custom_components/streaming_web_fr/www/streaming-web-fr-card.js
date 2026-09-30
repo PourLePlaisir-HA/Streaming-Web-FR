@@ -312,14 +312,14 @@ class StreamingWebFrCard extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>
         :host{display:block;font-family:var(--paper-font-body1_-_font-family,system-ui,sans-serif)}
-        ha-card{overflow:hidden;border-radius:var(--ha-card-border-radius,16px);background:linear-gradient(145deg,rgba(18,18,24,.96),rgba(28,28,38,.94));color:#fff}
+        ha-card{overflow:hidden;border-radius:var(--ha-card-border-radius,16px);background:var(--card-background-color,#fff);color:var(--primary-text-color,#111);border:1px solid var(--divider-color,#e0e0e0);box-shadow:none}
         .wrap{padding:16px}
         .head{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:14px}
         h1{font-size:20px;line-height:1.2;margin:0;font-weight:700}
-        .count{font-size:12px;color:rgba(255,255,255,.6)}
+        .count{font-size:12px;color:var(--secondary-text-color,#666)}
         .head-actions{display:flex;align-items:center;gap:8px}
-        .refresh,.back{height:34px;border:0;border-radius:999px;background:rgba(255,255,255,.07);color:#fff;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
-        .refresh{width:34px}.back{padding:0 10px 0 8px}
+        .refresh,.back{height:40px;border:0;border-radius:999px;background:var(--secondary-background-color,#ececec);color:var(--primary-text-color,#111);display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+        .refresh{width:40px}.back{padding:0 13px 0 10px}
         .home-section{margin:4px 0 22px}
         .section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
         .section-head h2{font-size:16px;margin:0}
@@ -330,14 +330,14 @@ class StreamingWebFrCard extends HTMLElement {
         .explore button{display:flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.1);color:#fff;border-radius:999px;padding:10px 18px;cursor:pointer;font-weight:600}
         .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
         .search-wrap{position:relative;flex:1 1 240px;min-width:180px}
-        .search{box-sizing:border-box;width:100%;height:40px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(255,255,255,.07);color:#fff;padding:0 38px 0 12px;outline:none}
+        .search{box-sizing:border-box;width:100%;height:40px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:var(--secondary-background-color,#ededed);color:var(--primary-text-color,#111);padding:0 38px 0 12px;outline:none}
         .search:focus{border-color:rgba(255,255,255,.4);box-shadow:0 0 0 2px rgba(255,255,255,.08)}
         .search-icon{position:absolute;right:10px;top:9px;color:rgba(255,255,255,.55)}
         select{height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:#fff;padding:0 10px}
         .providers,.categories{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
         .providers::-webkit-scrollbar,.categories::-webkit-scrollbar{display:none}
-        .chip{white-space:nowrap;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.06);color:#ddd;border-radius:999px;padding:7px 11px;cursor:pointer}
-        .chip.active{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)}
+        .chip{white-space:nowrap;border:1px solid rgba(255,255,255,.13);background:var(--secondary-background-color,#e9e9e9);color:var(--secondary-text-color,#666);border-radius:999px;padding:7px 11px;cursor:pointer}
+        .chip.active{background:var(--primary-color,#03a9d9);color:var(--text-primary-color,#fff);border-color:rgba(255,255,255,.35)}
         .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:14px 11px}
         .poster{appearance:none;border:0;padding:0;background:none;color:inherit;text-align:left;cursor:pointer;min-width:0}
         .art{position:relative;aspect-ratio:2/3;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.06);box-shadow:0 7px 20px rgba(0,0,0,.28);transition:transform .16s ease}
