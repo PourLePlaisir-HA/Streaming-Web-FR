@@ -7,6 +7,7 @@ const SWFR_DEFAULTS = {
   scroll_direction: "horizontal",
   poster_rows: 2,
   debug: false,
+  play_on_current_device: false,
 };
 
 class StreamingWebFrCard extends HTMLElement {
@@ -31,6 +32,7 @@ class StreamingWebFrCard extends HTMLElement {
     this._popup = null;
     this._popupLoading = false;
     this._playStatus = "";
+    this._currentStream = null;
     this._observer = null;
     this._remoteLoading = false;
   }
@@ -51,6 +53,7 @@ class StreamingWebFrCard extends HTMLElement {
     const posterRows = Number(this._config.poster_rows);
     this._config.poster_rows = Number.isFinite(posterRows) && posterRows > 0 ? Math.floor(posterRows) : 2;
     this._config.debug = this._config.debug === true;
+    this._config.play_on_current_device = this._config.play_on_current_device === true;
     this._visible = this._config.posters_par_lot;
     this._render();
   }
@@ -71,6 +74,7 @@ class StreamingWebFrCard extends HTMLElement {
       posters_par_lot: 8,
       home_section_count: 10,
       scroll_infini: false,
+      play_on_current_device: false,
       debug: false,
     };
   }
@@ -298,6 +302,15 @@ class StreamingWebFrCard extends HTMLElement {
     const poster = item.poster
       ? `<img class="modal-poster" src="${this._esc(item.poster)}" alt="">`
       : `<div class="modal-poster empty"><ha-icon icon="mdi:movie-open-outline"></ha-icon></div>`;
+    const currentDevice = this._config.play_on_current_device ? `
+      <button class="play current-device" type="button"
+        data-play-current
+        data-play-provider="${this._esc(item.provider_id)}"
+        data-play-item="${this._esc(item.provider_item_id)}">
+        <ha-icon icon="mdi:cellphone-play"></ha-icon>
+        <span><strong>Lire sur cet appareil</strong><small>Navigateur actuel</small></span>
+      </button>
+    ` : "";
     const players = (this._data.players || []).map((player) => `
       <button class="play" type="button"
         data-play-provider="${this._esc(item.provider_id)}"
@@ -325,8 +338,11 @@ class StreamingWebFrCard extends HTMLElement {
 
           ${this._config.debug ? `<div class="modal-debug">provider_item_id: ${this._esc(item.provider_item_id || "—")}<br>page_url: ${this._esc(item.page_url || "—")}<br>page_referer: ${this._esc(item.extra?.source_url || "—")}</div>` : ""}
               <div class="play-list">
-                ${players || '<div class="hint">Aucune destination Android TV configurée.</div>'}
+                ${currentDevice}
+                ${players}
+                ${!currentDevice && !players ? '<div class="hint">Aucune destination de lecture configurée.</div>' : ''}
               </div>
+              ${this._currentStream ? `<div class="current-player"><video controls playsinline webkit-playsinline preload="metadata" src="${this._esc(this._currentStream.url)}"></video><div class="current-player-label">Lecture sur cet appareil${this._currentStream.stream_type ? ` · ${this._esc(this._currentStream.stream_type)}` : ""}</div></div>` : ""}
               ${this._playStatus ? `<div class="play-status">${this._esc(this._playStatus)}</div>` : ""}
             </div>
           </div>
@@ -399,6 +415,7 @@ class StreamingWebFrCard extends HTMLElement {
         .overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);display:grid;place-items:center;padding:16px;z-index:9999}
         .modal{position:relative;width:min(760px,96vw);max-height:88vh;overflow:auto;border:1px solid rgba(255,255,255,.14);border-radius:18px;background:linear-gradient(145deg,#18181f,#22222d);box-shadow:0 30px 80px rgba(0,0,0,.5);padding:18px}
         .loading-modal{width:auto;display:flex;align-items:center;gap:10px}
+        .current-player{margin-top:12px}.current-player video{display:block;width:100%;max-height:55vh;background:#000;border-radius:12px}.current-player-label{margin-top:6px;font-size:12px;color:rgba(255,255,255,.68)}
         .close{position:absolute;right:10px;top:10px;border:0;border-radius:999px;background:rgba(0,0,0,.46);color:#fff;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;z-index:2}
         .modal-grid{display:grid;grid-template-columns:190px 1fr;gap:22px}
         .modal-poster{width:190px;aspect-ratio:2/3;object-fit:cover;border-radius:12px;background:rgba(255,255,255,.06)}
@@ -660,6 +677,9 @@ class StreamingWebFrCard extends HTMLElement {
     root.querySelectorAll("[data-play-player]").forEach((button) => {
       button.addEventListener("click", () => this._play(button));
     });
+    root.querySelectorAll("[data-play-current]").forEach((button) => {
+      button.addEventListener("click", () => this._playCurrent(button));
+    });
 
     if (this._observer) {
       this._observer.disconnect();
@@ -679,6 +699,7 @@ class StreamingWebFrCard extends HTMLElement {
     this._popupLoading = true;
     this._popup = null;
     this._playStatus = "";
+    this._currentStream = null;
     this._render();
     try {
       await this._syncRuntime();
@@ -694,6 +715,40 @@ class StreamingWebFrCard extends HTMLElement {
     } finally {
       this._popupLoading = false;
       this._render();
+    }
+  }
+
+  async _playCurrent(button) {
+    if (!this._hass) return;
+    const providerId = button.dataset.playProvider;
+    const itemId = button.dataset.playItem;
+    this._playStatus = "Résolution du flux pour cet appareil…";
+    this._currentStream = null;
+    this._render();
+    try {
+      const msg = {
+        type: "streaming_web_fr/resolve",
+        provider_id: providerId,
+        provider_item_id: String(itemId),
+      };
+      if (this._popup?.page_url) msg.page_url = this._popup.page_url;
+      if (this._popup?.extra?.source_url) msg.page_referer = this._popup.extra.source_url;
+      const stream = await this._hass.callWS(msg);
+      if (!stream?.url) throw new Error("Le Provider n'a retourné aucune URL média.");
+      this._currentStream = stream;
+      this._playStatus = "Flux prêt sur cet appareil.";
+    } catch (err) {
+      this._playStatus = `Erreur : ${String(err?.message || err)}`;
+    }
+    this._render();
+    const video = this.shadowRoot?.querySelector(".current-player video");
+    if (video) {
+      try {
+        await video.play();
+      } catch (_) {
+        this._playStatus = "Flux prêt. Appuyez sur Lecture pour démarrer.";
+        this._render();
+      }
     }
   }
 
@@ -751,10 +806,11 @@ class StreamingWebFrCardEditor extends HTMLElement {
     if (!this.shadowRoot) return;
     const direction = String(this._config.scroll_direction || "horizontal").toLowerCase() === "vertical" ? "vertical" : "horizontal";
     const rows = Math.max(1, Math.floor(Number(this._config.poster_rows) || 2));
+    const playOnCurrentDevice = this._config.play_on_current_device === true;
     this.shadowRoot.innerHTML = `
       <style>
         :host{display:block;padding:8px 0}
-        .field{display:grid;gap:6px}
+        .field{display:grid;gap:6px}.toggle-field{display:flex;align-items:center;gap:10px;margin-top:14px}.toggle-field input{width:20px;min-height:20px;margin:0}
         label{font-size:14px;font-weight:500;color:var(--primary-text-color)}
         select,input{box-sizing:border-box;width:100%;min-height:44px;padding:0 12px;border:1px solid var(--divider-color,#ddd);border-radius:8px;background:var(--card-background-color,#fff);color:var(--primary-text-color);font:inherit}
         .hint{font-size:12px;color:var(--secondary-text-color)}
@@ -767,6 +823,13 @@ class StreamingWebFrCardEditor extends HTMLElement {
         </select>
         <div class="hint">Définit l'affichage des posters sur la page d'accueil.</div>
       </div>
+      <div class="toggle-field">
+        <input id="play-on-current-device" type="checkbox" ${playOnCurrentDevice ? "checked" : ""}>
+        <div>
+          <label for="play-on-current-device">Lecture sur cet appareil</label>
+          <div class="hint">Ajoute une destination de lecture dans le navigateur actuel (iPhone, iPad et navigateurs compatibles).</div>
+        </div>
+      </div>
       <div class="field poster-rows-field" style="margin-top:14px;${direction === "vertical" ? "" : "opacity:.55"}">
         <label for="poster-rows">Nombre de lignes de posters</label>
         <input id="poster-rows" type="number" min="1" step="1" value="${rows}" ${direction === "vertical" ? "" : "disabled"}>
@@ -775,6 +838,15 @@ class StreamingWebFrCardEditor extends HTMLElement {
     `;
     this.shadowRoot.querySelector("#scroll-direction")?.addEventListener("change", (event) => {
       const config = { ...this._config, scroll_direction: event.target.value };
+      this._config = config;
+      this.dispatchEvent(new CustomEvent("config-changed", {
+        detail: { config },
+        bubbles: true,
+        composed: true,
+      }));
+    });
+    this.shadowRoot.querySelector("#play-on-current-device")?.addEventListener("change", (event) => {
+      const config = { ...this._config, play_on_current_device: event.target.checked };
       this._config = config;
       this.dispatchEvent(new CustomEvent("config-changed", {
         detail: { config },
