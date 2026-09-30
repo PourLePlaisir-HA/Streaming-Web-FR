@@ -163,6 +163,9 @@ class StreamingWebFrCard extends HTMLElement {
     try {
       const msg = { type: "streaming_web_fr/search", query };
       if (this._provider) msg.provider_id = this._provider;
+      if (Object.prototype.hasOwnProperty.call(this._rawConfig || {}, "exact_naming")) {
+        msg.exact_naming = Boolean(this._config.exact_naming);
+      }
       this._data = await this._hass.callWS(msg);
       this._loaded = true;
       this._visible = this._config.posters_par_lot;
@@ -450,6 +453,8 @@ class StreamingWebFrCard extends HTMLElement {
               <span>has_more: ${hasRemoteMore}</span>
               <span>cursor: ${this._esc(this._data?.next_cursor || "—")}</span>
               <span>search: ${this._esc(this._data?.search_mode || "—")}</span>\n              <span>query: ${this._esc(this._data?.query || "—")}</span>\n              <span>query_sent: ${this._esc(this._data?.query_sent ? JSON.stringify(this._data.query_sent) : "—")}</span>
+              <span>exact_naming: ${this._esc(this._data?.exact_naming ? JSON.stringify(this._data.exact_naming) : "—")}</span>
+              <span>exact_naming_source: ${this._esc(this._data?.exact_naming_source || "—")}</span>
               <span>players: ${(this._data?.players || []).length}</span>
               <span>ids: ${this._esc((this._data?.players || []).map((p) => p.id).join(", ") || "—")}</span>
               <span>config: ${this._esc(this._data?.config_path || "—")}</span>
