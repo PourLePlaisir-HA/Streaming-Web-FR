@@ -1,3 +1,10 @@
+## 0.8.0-beta.7
+
+- Corrected the SearchBox insertion point in the main Lovelace render.
+- SearchBox is now rendered immediately below the debug block and above the first home section.
+- Removed accidental SearchBox template insertion from media popup rendering.
+- Keeps native Provider search and per-Provider `exact_naming` compatibility.
+
 ## 0.8.0-beta.6
 
 - Fixed the SearchBox rendering on the main Lovelace home view.
