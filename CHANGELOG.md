@@ -1,3 +1,12 @@
+## 0.8.0-beta.3
+
+- Added per-Provider `exact_naming` search compatibility setting.
+- `exact_naming: true` is the default and sends the user query unchanged.
+- `exact_naming: false` removes only a recognized leading French elision before the native Provider search (for example `L'Affaire` → `Affaire`).
+- Added `exact_naming` to the Provider configuration UI.
+- Documented the compatibility behavior and per-Provider scope.
+- Keeps the validated native Provider search backend from beta.2.
+
 ## 0.8.0-beta.2
 
 - Improved native Provider search request fidelity.
