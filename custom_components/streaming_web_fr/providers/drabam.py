@@ -263,10 +263,16 @@ class DrabamProvider(StreamingProvider):
         if len(query) < 2:
             return []
         search_url = self._home_url()
+        # Prime the Provider session exactly like a browser visit before the
+        # form POST. Some Provider deployments bind search handling to cookies
+        # issued by the home document.
+        _, primed_url, primed_status, _ = await self._get_text(search_url)
+        if primed_status >= 400:
+            raise ProviderError(f"Provider search bootstrap HTTP {primed_status}")
         source, final_url, status, _ = await self._post_form_text(
-            search_url,
+            primed_url,
             {"searchword": query},
-            referer=search_url,
+            referer=primed_url,
         )
         if status >= 400:
             raise ProviderError(f"Provider search HTTP {status}")
