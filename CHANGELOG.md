@@ -1,3 +1,13 @@
+## 0.7.0
+
+- Promoted the validated 0.7 beta cycle to stable.
+- Added configurable horizontal/vertical home-section navigation.
+- Added bounded vertical scrolling with configurable `poster_rows` (default: `2`) in YAML and the Lovelace visual editor.
+- Kept `home_section_count` for home-section availability and `posters_par_lot` for catalog pagination.
+- Fixed title parsing for apostrophes such as `L'Affaire Zanetti`, `D'Artagnan` and `Ocean's Eleven`.
+- Runtime/debug version is read automatically from `manifest.json`.
+- Updated Streaming Web FR visual identity assets.
+
 ## 0.7.0-beta.4
 
 - Fixed a regression introduced in beta.3 that could make the home/catalog parser return zero titles.
