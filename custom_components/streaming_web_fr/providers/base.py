@@ -222,6 +222,10 @@ class StreamingProvider(ABC):
             items = [item for item in items if needle in item.title.casefold()]
         return CatalogPage(items=items, search_mode="local")
 
+    def search_query(self, query: str) -> str:
+        """Return the effective query sent to this Provider."""
+        return str(query or "").strip()
+
     async def search(self, query: str) -> list[MediaItem]:
         query = str(query or "").strip().casefold()
         items = await self.browse()
