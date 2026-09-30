@@ -1,3 +1,13 @@
+## 0.8.0-beta.4
+
+- Restored the Lovelace SearchBox and connected it to the validated native Provider search backend.
+- Added a dedicated WebSocket search command using each Provider's independent search implementation and configuration.
+- Search runs only on Enter or the search button, not on every keystroke.
+- Minimum query length remains 2 characters and duplicate validated searches are ignored.
+- Clearing the SearchBox restores the catalog view.
+- Provider-specific `exact_naming` normalization from beta.3 is automatically applied to SearchBox queries.
+- Search results reuse the existing poster, details and VLC playback flow.
+
 ## 0.8.0-beta.3
 
 - Added per-Provider `exact_naming` search compatibility setting.
