@@ -103,6 +103,7 @@ providers:
     type: Provider
     enabled: true
     priority: 100
+    exact_naming: true
     base_url: https://example.com/access-prefix
     auth:
       mode: none
@@ -117,6 +118,16 @@ players:
 ```
 
 The number of providers and Android TV destinations is not limited.
+
+### Provider search naming compatibility
+
+`exact_naming` is configured independently for each Provider and defaults to `true` when omitted.
+
+- `exact_naming: true`: the search text is sent unchanged to the Provider. For example, `L'Affaire` is sent as `L'Affaire`.
+- `exact_naming: false`: Streaming Web FR removes only a recognized leading French elision before sending the query. For example, `L'Affaire` becomes `Affaire` and `D'Artagnan` becomes `Artagnan`. A title without a leading elision, such as `Matrix`, is unchanged.
+
+This compatibility option is intended for Providers whose native search engine handles apostrophes or leading elisions poorly. It does not globally remove apostrophes from titles or queries.
+
 
 After editing the YAML file, reload it from **Developer Tools → Actions** with:
 
