@@ -480,7 +480,9 @@ class StreamingWebFrCard extends HTMLElement {
           ` : searchResultsMode ? `
             ${visible.length ? `
               <div class="search-results-head"><button class="search-home" type="button" data-search-home><ha-icon icon="mdi:home-outline"></ha-icon>Accueil</button><strong>Résultats de recherche</strong><span>${items.length} résultat${items.length > 1 ? "s" : ""}</span></div>
-              <div class="grid">${visible.map((item) => this._poster(item)).join("")}</div>
+              <div class="rail ${this._config.scroll_direction === "vertical" ? "rail-vertical" : "rail-horizontal"}" style="--poster-rows:${this._config.poster_rows}">
+                ${items.map((item) => this._poster(item)).join("")}
+              </div>
             ` : `<div class="state"><ha-icon icon="mdi:movie-search-outline"></ha-icon>Aucun résultat pour « ${this._esc(this._query)} ».</div>`}
           ` : !catalogMode ? `
             ${homeSections || `<div class="state"><ha-icon icon="mdi:movie-search-outline"></ha-icon>Aucune section détectée sur la page d'accueil.</div>`}
